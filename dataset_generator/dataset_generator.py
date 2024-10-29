@@ -30,8 +30,8 @@ class DatasetGenerator:
             annotation = {
                 "image_path": image_path,
                 "location": {
-                    "lat": lat,
-                    "lng": lng
+                    "lat": float(lat),
+                    "lng": float(lng)
                 }
             }
             annotations.append(annotation)

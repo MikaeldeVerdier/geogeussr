@@ -1,5 +1,7 @@
 import requests
 import random
+import io
+from PIL import Image
 
 class ImageFetcher:
     def __init__(self, api_key, base_url, return_size, location_tolerance):
@@ -60,9 +62,9 @@ class ImageFetcher:
 
         return path
 
-    def save_image(self, image, path):
-        with open(path, "wb") as file:
-            file.write(image)
+    def save_image(self, byte_image, path):
+        image = Image.open(io.BytesIO(byte_image))
+        image.save(path)
 
     def generate_image(self, dir):
         location, metadata = self.generate_location()

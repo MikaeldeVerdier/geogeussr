@@ -1,0 +1,3 @@
+LEARNING_RATE = 1e-3
+BETA_1 = 0.9
+BETA_2 = 0.999

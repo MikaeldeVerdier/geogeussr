@@ -1,6 +1,6 @@
 from dataset_generator import DatasetGenerator
 
-API_KEY = "AIzaSyAHS_j4Z5SKW2cRn8D_Jix5sA_GCQJYSfo"
+API_KEY = "API_KEY"
 
 DATASET_DIR = "./datasets/dataset10"
 AMOUNT_IMAGES = 10

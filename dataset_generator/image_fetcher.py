@@ -5,15 +5,25 @@ import hashlib
 import hmac
 import base64
 import urllib.parse as urlparse
+import geopandas as gpd
 from PIL import Image
 
 class ImageFetcher:
-    def __init__(self, api_key, secret, base_url, return_size, location_tolerance):
+    def __init__(self, shapefile_path, api_key, secret, base_url, return_size, location_tolerance):
         self.api_key = api_key
         self.secret = secret
         self.base_url = base_url
         self.return_size = return_size
         self.location_tolerance = location_tolerance
+
+        self.geodf = gpd.read_file(shapefile_path)
+        self.geodf.dissolve(by="GID_0")
+
+        areadf = self.geodf.to_crs("EPSG:6933")  # For accruate area, an equal-area projection is used
+        self.areas = areadf.geometry.area
+
+        if self.geodf.crs != "EPSG:4326":
+            self.geodf = self.geodf.to_crs("EPSG:4326")  # Lat, lng
 
     def query_metadata(self, location, radius):
         metadata_url = "https://maps.googleapis.com/maps/api/streetview/metadata"
@@ -28,12 +38,18 @@ class ImageFetcher:
 
         return metadata
 
-    def generate_location(self, lat_range=(-90, 90), lng_range=(-180, 180)):  # POSSIBLE BIAS WITH THIS APPROACH: Initial location will often be in the middle of the ocean, meaning this will be more likely to generate beach locations.
+    def generate_location(self):  # , lat_range=(-90, 90), lng_range=(-180, 180)):
         num_attempts = 0
         metadata = {"status": ""}
         while metadata["status"] != "OK":  # try a random point until a location within location_tolerance is accepted
-            lat = random.uniform(lat_range[0], lat_range[1])
-            lng = random.uniform(lng_range[0], lng_range[1])
+            # lat = random.uniform(lat_range[0], lat_range[1])
+            # lng = random.uniform(lng_range[0], lng_range[1])
+            chosen_id = random.choices(self.geodf["UID"], weights=self.areas)[0]  # Could generate all locations that will be used in one
+            chosen_entry = self.geodf[self.geodf["UID"] == chosen_id]
+            points = chosen_entry.sample_points(1)
+
+            lat = points.geometry.y._values[0]
+            lng = points.geometry.x._values[0]
 
             initial_location = f"{lat},{lng}"
             # print(initial_location)

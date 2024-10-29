@@ -4,7 +4,8 @@ import random
 import cv2
 
 class DatasetHandler:
-    def __init__(self, dataset_path, batch_size):
+    def __init__(self, shapefile_path, dataset_path, batch_size):
+        self.shapefile_path = shapefile_path
         self.dataset_path = dataset_path
         self.batch_size = batch_size
 

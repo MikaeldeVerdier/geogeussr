@@ -1,11 +1,16 @@
 import requests
 import random
 import io
+import hashlib
+import hmac
+import base64
+import urllib.parse as urlparse
 from PIL import Image
 
 class ImageFetcher:
-    def __init__(self, api_key, base_url, return_size, location_tolerance):
+    def __init__(self, api_key, secret, base_url, return_size, location_tolerance):
         self.api_key = api_key
+        self.secret = secret
         self.base_url = base_url
         self.return_size = return_size
         self.location_tolerance = location_tolerance
@@ -43,6 +48,16 @@ class ImageFetcher:
         print(f"Exact location: {exact_location}")
 
         return exact_location, metadata
+    
+    def encode_signature(self, input_url):
+        url = urlparse.urlparse(input_url)
+        url_to_sign = f"{url.path}?{url.query}"
+
+        decoded_key = base64.urlsafe_b64decode(self.secret)
+        signature = hmac.new(decoded_key, str.encode(url_to_sign), hashlib.sha1)
+        encoded_signature = base64.urlsafe_b64encode(signature.digest())
+
+        return encoded_signature
 
     def query_image(self, location):
         params = {
@@ -51,6 +66,10 @@ class ImageFetcher:
             "size": f"{self.return_size[0]}x{self.return_size[1]}",
             "radius": 10  # should theoretically be able to be 0? 
         }
+        if self.secret is not None:
+            url = self.base_url + urlparse.urlencode(params)
+            signature = self.encode_signature(url)
+            params |= {"signature": signature}
 
         response = requests.get(self.base_url, params=params)
         image = response.content

@@ -4,9 +4,10 @@ import json
 from image_fetcher import ImageFetcher
 
 class DatasetGenerator:
-    def __init__(self, api_key, location_tolerance):
+    def __init__(self, api_key, location_tolerance, secret=None):
         self.api_key = api_key
         self.location_tolerance = location_tolerance
+        self.secret = secret
 
         self.streetview_base_url = "https://maps.googleapis.com/maps/api/streetview?"
 
@@ -21,7 +22,7 @@ class DatasetGenerator:
     def generate_dataset(self, dir, amount_images, image_size):
         self.create_folder(dir)
 
-        fetcher = ImageFetcher(self.api_key, self.streetview_base_url, image_size, self.location_tolerance)
+        fetcher = ImageFetcher(self.api_key, self.secret, self.streetview_base_url, image_size, self.location_tolerance)
 
         annotations = []
         for i in range(amount_images):

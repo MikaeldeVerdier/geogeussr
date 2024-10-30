@@ -7,6 +7,7 @@ import base64
 import urllib.parse as urlparse
 import geopandas as gpd
 from PIL import Image
+from time import sleep
 
 class ImageFetcher:
     def __init__(self, shapefile_path, api_key, secret, base_url, return_size, location_tolerance):
@@ -33,13 +34,17 @@ class ImageFetcher:
             "radius": radius
         }
 
-        response = requests.get(metadata_url, params=params)
-        metadata = response.json()
+        try:
+            response = requests.get(metadata_url, params=params)
+            metadata = response.json()
+        except requests.ConnectTimeout:
+            metadata = {"status": "TIMEOUT"}
 
         return metadata
 
     def generate_location(self):  # , lat_range=(-90, 90), lng_range=(-180, 180)):
         num_attempts = 0
+        timed_out_attempts = 0
         metadata = {"status": ""}
         while metadata["status"] != "OK":  # try a random point until a location within location_tolerance is accepted
             # lat = random.uniform(lat_range[0], lat_range[1])
@@ -54,6 +59,11 @@ class ImageFetcher:
             initial_location = f"{lat},{lng}"
             # print(initial_location)
             metadata = self.query_metadata(initial_location, self.location_tolerance)
+            if metadata["status"] == "TIMEOUT":
+                timed_out_attempts += 1
+                sleep(1.5 ** timed_out_attempts)
+            else:
+                timed_out_attempts = 0
 
             num_attempts += 1
 

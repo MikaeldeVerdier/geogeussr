@@ -20,7 +20,7 @@ class DatasetGenerator:
         with open(os.path.join(dir, "_annotations.json"), "w") as json_file:
             json.dump(annotations, json_file)
 
-    def generate_dataset(self, dir, amount_images, image_size):
+    def generate_dataset(self, dir, amount_images, image_size, save_ratio=0.1):
         self.create_folder(dir)
 
         fetcher = ImageFetcher(self.shapefile_path, self.api_key, self.secret, self.streetview_base_url, image_size, self.location_tolerance)
@@ -37,5 +37,8 @@ class DatasetGenerator:
                 }
             }
             annotations.append(annotation)
-    
+
+            if not i % int(save_ratio * amount_images):  # will save the first iteration but that's okay!
+                self.save_annotations(annotations, dir)
+
         self.save_annotations(annotations, dir)

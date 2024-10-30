@@ -1,13 +1,15 @@
 from dataset_generator import DatasetGenerator
 
-API_KEY = "API_KEY"
-SECRET = "SECRET"
+API_KEY = "API_KEY"  # str
+SECRET = None  # str | None
 
-SHAPEFILE_PATH = "dataset_generator/gadm_410.gpkg"
-DATASET_DIR = "datasets/dataset"
-AMOUNT_IMAGES = 10
-IMAGE_SIZE = (640, 640)
-LOCATION_TOLERANCE = 5000  # The maximum distance (in meters) from a random point allowed. Smaller -> more uniform distribution, longer generation time; Larger -> less uniform distribution, shorter generation time
+SHAPEFILE_PATH = "dataset_generator/gadm_410.gpkg"  # str | None
+DATASET_DIR = "datasets/dataset"  # str
+AMOUNT_IMAGES = 11  # int
+IMAGE_SIZE = (640, 640)  # (int int)
+LOCATION_TOLERANCE = 5000  # int  # The maximum distance (in meters) from a random point allowed. Smaller -> more uniform distribution, longer generation time; Larger -> less uniform distribution, shorter generation time
+
+GENERATION_METHOD = "scrape"  # "scrape" | "query"
 
 
 if __name__ == "__main__":

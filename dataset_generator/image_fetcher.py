@@ -28,7 +28,10 @@ class ImageFetcher:
 
         if self.use_shapefile:
             self.geodf = gpd.read_file(shapefile_path)
-            self.geodf.dissolve(by="GID_0")
+            self.geodf = self.geodf.dissolve(by="GID_0")  # not actually needed?
+
+            # self.geodf.plot()
+            # plt.savefig("fdjkf.png")
 
             areadf = self.geodf.to_crs("EPSG:6933")  # For accruate area, an equal-area projection is used
             self.areas = areadf.geometry.area
@@ -67,7 +70,7 @@ class ImageFetcher:
         metadata = {"status": ""}
         while metadata["status"] != "OK":  # try a random point until a location within location_tolerance is accepted
             if self.use_shapefile:
-                chosen_id = random.choices(self.geodf["UID"], weights=self.areas)[0]  # Could generate all locations that will be used in one
+                chosen_id = random.choices(self.geodf["UID"]._values, weights=self.areas)[0]  # Could generate all locations that will be used in one
                 chosen_entry = self.geodf[self.geodf["UID"] == chosen_id]
                 points = chosen_entry.sample_points(1)
 

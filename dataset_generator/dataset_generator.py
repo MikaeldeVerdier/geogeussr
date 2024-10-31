@@ -1,6 +1,6 @@
 import os
-import json
 
+from files import save_annotations
 from image_fetcher import ImageFetcher
 
 class DatasetGenerator:
@@ -16,10 +16,6 @@ class DatasetGenerator:
     def create_folder(self, dir):
         if not os.path.exists(dir):
             os.mkdir(dir)
-
-    def save_annotations(self, annotations, dir):
-        with open(os.path.join(dir, "_annotations.json"), "w") as json_file:
-            json.dump(annotations, json_file)
 
     def generate_dataset(self, dir, amount_images, image_size, save_ratio=0.1):
         self.create_folder(dir)
@@ -40,6 +36,6 @@ class DatasetGenerator:
             annotations.append(annotation)
 
             if not i % int(save_ratio * amount_images):  # will save the first iteration but that's okay!
-                self.save_annotations(annotations, dir)
+                save_annotations(annotations, dir)
 
-        self.save_annotations(annotations, dir)
+        save_annotations(annotations, dir)

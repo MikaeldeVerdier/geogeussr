@@ -10,7 +10,7 @@ class Trainer:
 
     def train(self, model, iteration_amount):
         for i in range(iteration_amount):
-            batch = self.dataset_handler.generate_batch(model.preprocess_function)
+            batch = self.dataset_handler.generate_batch(model.preprocess_func)
             x, y = zip(*batch)
 
             model.fit(np.array(x), np.array(y), validation_split=self.validation_split)

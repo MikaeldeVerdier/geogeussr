@@ -2,7 +2,7 @@ import os
 import shutil
 import json
 
-from files import save_annotations
+from file_encoder import save_annotations
 
 def combine_dirs(*input_dirs, output_dir):
     if not os.path.exists(output_dir):

@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
-from files import load_annotations
+from file_decoder import load_annotations
 
 class DatasetHandler:
     def __init__(self, dataset_path, batch_size, num_clusters=10):

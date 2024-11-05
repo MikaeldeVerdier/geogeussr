@@ -28,12 +28,9 @@ class ImageFetcher:
 
         if self.use_shapefile:
             self.geodf = gpd.read_file(shapefile_path)
-            self.geodf = self.geodf.dissolve(by="GID_0")  # not actually needed?
+            self.geodf = self.geodf.dissolve(by="GID_0")
 
-            # self.geodf.plot()
-            # plt.savefig("fdjkf.png")
-
-            areadf = self.geodf.to_crs("EPSG:6933")  # For accruate area, an equal-area projection is used
+            areadf = self.geodf.to_crs("EPSG:6933")  # For accurate area, an equal-area projection is used
             self.areas = areadf.geometry.area
 
             if self.geodf.crs != "EPSG:4326":

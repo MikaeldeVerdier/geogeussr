@@ -39,7 +39,7 @@ class ImageFetcher:
         if generator_method == "scrape":
             chrome_options = Options()
             chrome_options.add_argument("--headless")
-            chrome_options.add_argument(f"--window-size={return_size[0]},{return_size[1] + int(278 / 2)}")  # 278 is search bar height. Image will be 2x this for some reason
+            chrome_options.add_argument(f"--window-size={return_size[0]},{return_size[1] + int(278 / 2)}")  # DEVICE DEPENDANT: 278 is search bar height. Image will be 2x this for some reason.
 
             self.driver = webdriver.Chrome(options=chrome_options)  # Never quits but whatever
 

@@ -62,16 +62,15 @@ class VisionTransformer(Model):
 
         self.d_model = d_model
 
-        self.preprocess_function = lambda x: x / 255
         self.patch_embedding = PatchEmbedding(num_patches, patch_size, d_model)
         self.transformer_layers = [TransformerBlock(d_model, num_heads, mlp_dim) for _ in range(num_layers)]
         self.class_token = tf.Variable(tf.zeros([1, 1, d_model]), trainable=True)
         self.mlp_head = Dense(num_classes)
 
-    def call(self, x):
-        batch_size = tf.shape(x)[0]
+    def call(self, inputs):
+        batch_size = tf.shape(inputs)[0]
 
-        x = self.patch_embedding(x)
+        x = self.patch_embedding(inputs)
         class_token = tf.broadcast_to(self.class_token, [batch_size, 1, self.d_model])
         x = tf.concat([class_token, x], axis=1)
 

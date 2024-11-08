@@ -5,7 +5,7 @@ import geopandas as gpd
 import pyproj
 from shapely.geometry import Point
 
-from file_decoder import load_annotations
+from files import load_annotations
 from countries import *
 
 class DatasetHandler:
@@ -46,16 +46,20 @@ class DatasetHandler:
 
         return [one_hot_country, encoded_coords]
 
-    def generate_batch(self, preprocess_function):
+    def generate_batch(self, preprocess_function, input_shape, completion=None):  # this general 'completion' approach is a bit different from the rest of the codebase
         chosen_annotations = random.sample(self.annotations, self.batch_size)
 
         batch = []
         for annotation in chosen_annotations:
             img = cv2.imread(annotation["image_path"])
+            img = cv2.resize(img, input_shape)
             preprocessed_image = preprocess_function(img)
 
             encoded_data = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
 
             batch.append([preprocessed_image, encoded_data])
+
+            if completion is not None:
+                completion(encoded_data)
 
         return batch

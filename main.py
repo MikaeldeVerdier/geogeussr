@@ -1,5 +1,6 @@
 from keras.models import load_model
 from keras.optimizers import Adam
+from keras.utils import plot_model
 
 import configs.training_config as train
 import configs.adam_config as adam
@@ -15,7 +16,9 @@ if __name__ == "__main__":
     # visualize_gmm(trainer.dataset_handler.gm, trainer.dataset_handler.coords, save_path="clusters.png", shapefile_path="dataset_generator/gadm_410.gpkg")
 
     model = FullModel()
-    model.compile(optimizer=Adam(learning_rate=adam.LEARNING_RATE, beta_1=adam.BETA_1, beta_2=adam.BETA_2), loss=HaversineLoss())  # TODO: this loss doesn't work with the two outputs
+    model.build((None, model.input_shape[0], model.input_shape[1], model.input_shape[2]))
+    optimizer = Adam(learning_rate=adam.LEARNING_RATE, beta_1=adam.BETA_1, beta_2=adam.BETA_2)
+    model.compile(optimizer=optimizer, loss=["categorical_crossentropy", HaversineLoss()])
     model.summary()
 
     trainer.train(model, train.AMOUNT_ITERATIONS)

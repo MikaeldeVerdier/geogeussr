@@ -1,8 +1,7 @@
 import os
 import shutil
-import json
 
-from file_encoder import save_annotations
+from dataset_generator.files import save_annotations, load_annotations
 
 def combine_dirs(*input_dirs, output_dir):
     if not os.path.exists(output_dir):
@@ -10,11 +9,14 @@ def combine_dirs(*input_dirs, output_dir):
 
     new_annotations = []
     for input_dir in input_dirs:
-        old_annotations_path = os.path.join(input_dir, "_annotations.json")
-        old_annotations = json.load(old_annotations_path)
+        old_annotations = load_annotations(input_dir)
 
         for old_annotation in old_annotations:
             old_path = old_annotation["image_path"]
+
+            if not os.path.exists(old_path):
+                continue
+
             new_path = os.path.join(output_dir, old_annotation["image_path"].split("/")[-1])
             shutil.copyfile(old_path, new_path)
 

@@ -1,6 +1,6 @@
 import os
 
-from file_encoder import save_annotations
+from dataset_generator.files import save_annotations
 from image_fetcher import ImageFetcher
 
 class DatasetGenerator:

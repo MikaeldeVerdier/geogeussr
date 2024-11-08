@@ -174,9 +174,9 @@ class ImageFetcher:
         image_path = self.generate_path(location, dir, heading)
 
         if self.generator_method == "scrape":
-            self.scrape_image(location, metadata["pano_id"], image_path)
+            self.scrape_image(location, metadata["pano_id"], image_path, heading=heading)
         elif self.generator_method == "query":
-            image = self.query_image(location)
+            image = self.query_image(location, heading=heading)
             self.save_image(image, image_path)
 
         return image_path, location

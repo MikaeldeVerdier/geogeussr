@@ -6,8 +6,8 @@ import configs.classifier_configs.cnn_config as cls_cnn_cfg
 import configs.classifier_configs.vit_config as cls_vit_cfg
 import configs.regressor_configs.cnn_config as reg_cnn_cfg
 import configs.regressor_configs.vit_config as reg_vit_cfg
-from models.cnn_model import ConvolutionalNeuralNetwork
-from models.vit_model import VisionTransformer
+from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
+from models.archictectures.vit_model import VisionTransformer
 
 class FullModel(Model):
     def __init__(self):
@@ -41,20 +41,20 @@ class FullModel(Model):
 
     def call(self, inputs):
         class_probs = self.classifier(inputs)
-        predicted_class = tf.argmax(class_probs, axis=-1)
+        predicted_classes = tf.cast(tf.argmax(class_probs, axis=-1), tf.int32)  # for some reason switch_case requires this
 
-        # regressed_value = tf.switch_case(predicted_class, branch_fns=[
-        #     lambda: specialized_regressor(inputs)
-        #     for specialized_regressor in self.specialized_regressors
-        # ])
-        regressor = self.specialized_regressors[predicted_class]
+        if not tf.is_symbolic_tensor(predicted_classes):  # TODO: this is so shit
+            regressed_values = [
+                self.specialized_regressors[idx]
+                if self.specialized_regressors[idx] is not None else
+                tf.zeros((reg_cnn_cfg.NUM_CLASSES,), dtype=tf.float32)
 
-        if regressor is None:
-            return class_probs, tf.constant([0, 0])
+                for idx in predicted_classes
+            ]
+        else:
+            regressed_values = tf.zeros((tf.shape(inputs)[0], reg_cnn_cfg.NUM_CLASSES), dtype=tf.float32)
 
-        regressed_value = regressor(inputs)
-
-        return class_probs, regressed_value
+        return class_probs, regressed_values
 
     def add_regressor(self, index):
         regressor = ConvolutionalNeuralNetwork(

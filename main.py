@@ -6,7 +6,8 @@ import configs.training_config as train
 import configs.adam_config as adam
 from trainer import Trainer
 from models.full_model import FullModel
-from models.haversine_loss import HaversineLoss
+# from models.haversine_loss import HaversineLoss
+from models.losses.root_mean_squared_error import RootMeanSquareError
 from visualizer.visualize_gmm import visualize_gmm
 
 if __name__ == "__main__":
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     model = FullModel()
     model.build((None, model.input_shape[0], model.input_shape[1], model.input_shape[2]))
     optimizer = Adam(learning_rate=adam.LEARNING_RATE, beta_1=adam.BETA_1, beta_2=adam.BETA_2)
-    model.compile(optimizer=optimizer, loss=["categorical_crossentropy", HaversineLoss()])
+    model.compile(optimizer=optimizer, loss=["categorical_crossentropy", RootMeanSquareError()])
     model.summary()
 
     trainer.train(model, train.AMOUNT_ITERATIONS)

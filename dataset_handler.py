@@ -52,7 +52,7 @@ class DatasetHandler:
         batch = []
         for annotation in chosen_annotations:
             img = cv2.imread(annotation["image_path"])
-            img = cv2.resize(img, input_shape)
+            img = cv2.resize(img, input_shape[:-1])
             preprocessed_image = preprocess_function(img)
 
             encoded_data = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])

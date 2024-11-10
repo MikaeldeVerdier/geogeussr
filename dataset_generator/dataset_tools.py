@@ -23,5 +23,8 @@ def combine_dirs(*input_dirs, output_dir):
             new_annotations.append(old_annotation)
             new_annotations[-1]["image_path"] = new_path
 
-    output_path = os.path.join(output_dir, "_annotations.json")
-    save_annotations(new_annotations, output_path)
+    save_annotations(new_annotations, output_dir)
+
+
+def clean_dir(input_dir, output_dir):  # 'clean' here means making sure only annotated images are in the dir
+    combine_dirs(input_dir, output_dir=output_dir)

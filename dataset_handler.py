@@ -63,3 +63,17 @@ class DatasetHandler:
                 completion(encoded_data)
 
         return batch
+
+    def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
+        country_name = COUNTRIES[np.argmax(class_probs.numpy()[0], axis=-1)]
+        country = self.geodf[self.geodf.index == country_name]
+
+        origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]
+
+        local_x = regressed_values[0].numpy()[0][0] * 1000
+        local_y = regressed_values[0].numpy()[0][1] * 1000
+
+        proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # could store these from encoding
+        lng, lat = proj(local_x, local_y, inverse=True)
+
+        return lat, lng

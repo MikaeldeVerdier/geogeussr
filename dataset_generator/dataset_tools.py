@@ -3,7 +3,7 @@ import shutil
 
 from dataset_generator.files import save_annotations, load_annotations
 
-def combine_dirs(*input_dirs, output_dir):
+def combine_dirs(*input_dirs, output_dir):  # TODO: instead of this, just copy the entire dir and then remove the ones that aren't in the annotations (perhaps only if clean is desired)
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 

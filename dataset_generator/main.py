@@ -13,5 +13,5 @@ GENERATION_METHOD = "scrape"  # "scrape" | "query"
 
 
 if __name__ == "__main__":
-    dataset_generator = DatasetGenerator(SHAPEFILE_PATH, API_KEY, LOCATION_TOLERANCE, secret=SECRET)
+    dataset_generator = DatasetGenerator(SHAPEFILE_PATH, API_KEY, LOCATION_TOLERANCE, secret=SECRET, load_dataset_path=DATASET_DIR)
     dataset_generator.generate_dataset(DATASET_DIR, AMOUNT_IMAGES, IMAGE_SIZE)

@@ -17,7 +17,7 @@ def combine_dirs(*input_dirs, output_dir):
             if not os.path.exists(old_path):
                 continue
 
-            new_path = os.path.join(output_dir, old_annotation["image_path"].split("/")[-1])
+            new_path = os.path.join(output_dir, old_annotation["image_path"].replace("\\", "/").split("/")[-1])
             shutil.copyfile(old_path, new_path)
 
             new_annotations.append(old_annotation)

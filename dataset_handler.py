@@ -30,6 +30,19 @@ class DatasetHandler:
         self.gm = self.gm.fit(self.coords)
     """
 
+    def prepare_model(self, model):
+        for annotation in self.annotations:
+            point = Point(annotation["location"]["lng"], annotation["location"]["lat"])
+            country = self.geodf[self.geodf.contains(point)]
+
+            country_name = country.index.values[0]
+            country_index = COUNTRIES.index(country_name)
+
+            if model.specialized_regressors[country_index] is None:
+                model.add_regressor(country_index)
+
+        model.build((None, model.input_shape[0], model.input_shape[1], model.input_shape[2]))
+
     def encode_coords(self, lat, lng):
         point = Point(lng, lat)
         country = self.geodf[self.geodf.contains(point)]
@@ -46,7 +59,7 @@ class DatasetHandler:
 
         return [one_hot_country, encoded_coords]
 
-    def generate_batch(self, preprocess_function, input_shape, completion=None):  # this general 'completion' approach is a bit different from the rest of the codebase
+    def generate_batch(self, preprocess_function, input_shape):  # , completion=None):  # this general 'completion' approach is a bit different from the rest of the codebase
         chosen_annotations = random.sample(self.annotations, self.batch_size)
 
         batch = []
@@ -59,21 +72,27 @@ class DatasetHandler:
 
             batch.append([preprocessed_image, encoded_data])
 
-            if completion is not None:
-                completion(encoded_data)
+            # if completion is not None:
+            #     completion(encoded_data)
 
         return batch
 
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
-        country_name = COUNTRIES[np.argmax(class_probs.numpy()[0], axis=-1)]
-        country = self.geodf[self.geodf.index == country_name]
+        coords = []
+        for batch_probs, batch_vals in zip(class_probs, regressed_values):
+            country_name = COUNTRIES[np.argmax(batch_probs, axis=-1)]
+            country = self.geodf[self.geodf.index == country_name]
 
-        origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]
+            origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]
 
-        local_x = regressed_values.numpy()[0][0] * 1000
-        local_y = regressed_values.numpy()[0][1] * 1000
+            local_x = batch_vals[0] * 1000
+            local_y = batch_vals[1] * 1000
 
-        proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # could store these from encoding
-        lng, lat = proj(local_x, local_y, inverse=True)
+            proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # could store these from encoding
+            lng, lat = proj(local_x, local_y, inverse=True)
 
-        return lat, lng
+            coords.append([lat, lng])
+
+        np_coords = np.array(coords)
+
+        return np_coords

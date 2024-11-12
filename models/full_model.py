@@ -12,8 +12,8 @@ from models.archictectures.vit_model import VisionTransformer
 from countries import *
 
 class FullModel(Model):
-    def __init__(self, classifier=None, specialized_regressors=None):
-        super(FullModel, self).__init__()
+    def __init__(self, classifier=None, specialized_regressors=None, **kwargs):
+        super(FullModel, self).__init__(**kwargs)
 
         # self.preprocess_function = lambda x: x / 255
         self.preprocess_func = preprocess_input
@@ -47,11 +47,13 @@ class FullModel(Model):
                 # for _ in range(cls_vit_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
             ]
 
+    @tf.function
     def call(self, inputs):
         class_probs = self.classifier(inputs)
         predicted_classes = tf.cast(tf.argmax(class_probs, axis=-1), tf.int32)  # for some reason switch_case requires this
 
-        if not tf.is_symbolic_tensor(predicted_classes):  # TODO: this is so shit
+        """
+        if not tf.is_symbolic_tensor(predicted_classes):  # this is so shit
             regressed_values = [
                 self.specialized_regressors[idx](inputs)
                 if self.specialized_regressors[idx] is not None else
@@ -63,6 +65,24 @@ class FullModel(Model):
             tf.print("NOT SYMBOLIC")
         else:
             regressed_values = tf.zeros((tf.shape(inputs)[0], reg_cnn_cfg.NUM_CLASSES), dtype=tf.float32)
+        """
+
+        # regressors = tf.gather(self.specialized_regressors, predicted_classes)
+        # regressed_values = tf.vectorized_map(regressors, inputs)
+        # # regressed_values = tf.switch_case(predicted_classes, lamb_regressors)
+
+        regressed_values = tf.zeros((tf.shape(inputs)[0], reg_cnn_cfg.NUM_CLASSES), dtype=tf.float32)
+        for idx, regressor in enumerate(self.specialized_regressors):
+            if regressor is None:
+                continue
+
+            used_mask = predicted_classes == idx
+            if tf.reduce_any(used_mask):
+                masked_inputs = tf.boolean_mask(inputs, used_mask)
+                masked_outputs = regressor(masked_inputs)
+
+                output_mask_indices = tf.where(used_mask)
+                regressed_values = tf.tensor_scatter_nd_update(regressed_values, output_mask_indices, masked_outputs)
 
         return class_probs, regressed_values
 

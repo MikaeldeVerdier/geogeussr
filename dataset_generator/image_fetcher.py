@@ -113,22 +113,22 @@ class ImageFetcher:
 
         wait = WebDriverWait(self.driver, 10)  # 10s timeout
 
-        if self.driver.find_elements(By.CSS_SELECTOR, "button.XWZjwc"):
-            click_injection = "document.querySelectorAll('button.XWZjwc')[1].click()"  # Why is this even needed?
-            self.driver.execute_script(click_injection)
-
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "canvas")))
-        js_injection = """
-            canvas = document.querySelector('canvas');
-            context = canvas.getContext('webgl');
-            if (context == null) {
-                context = canvas.getContext('webgl2');
-            }
-            context.drawArrays = function() { }
-        """
-        self.driver.execute_script(js_injection)
-
         try:
+            if self.driver.find_elements(By.CSS_SELECTOR, "button.XWZjwc"):
+                click_injection = "document.querySelectorAll('button.XWZjwc')[1].click()"  # Why is this even needed?
+                self.driver.execute_script(click_injection)
+
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "canvas")))
+            js_injection = """
+                canvas = document.querySelector('canvas');
+                context = canvas.getContext('webgl');
+                if (context == null) {
+                    context = canvas.getContext('webgl2');
+                }
+                context.drawArrays = function() { }
+            """
+            self.driver.execute_script(js_injection)
+
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#minimap div div:nth-child(2)")))
             css_injection = "document.styleSheets[0].insertRule('.app-viewcard-strip, .scene-footer, .id-omnibox-container, .hdeJwf, #titlecard, #watermark, #image-header { display: none !important; }')"  # ; document.querySelector('.scene-footer').style.display = 'none'"  # Don't know why scene-footer needs to be seperate
             self.driver.execute_script(css_injection)

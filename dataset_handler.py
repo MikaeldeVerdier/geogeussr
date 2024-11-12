@@ -70,8 +70,8 @@ class DatasetHandler:
 
         origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]
 
-        local_x = regressed_values[0].numpy()[0][0] * 1000
-        local_y = regressed_values[0].numpy()[0][1] * 1000
+        local_x = regressed_values.numpy()[0][0] * 1000
+        local_y = regressed_values.numpy()[0][1] * 1000
 
         proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # could store these from encoding
         lng, lat = proj(local_x, local_y, inverse=True)

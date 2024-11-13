@@ -1,3 +1,4 @@
+import os
 import requests
 import random
 import io
@@ -101,9 +102,10 @@ class ImageFetcher:
         return exact_location, metadata, heading
 
     def generate_path(self, location, dir, heading):
-        path = f"{dir}/{location}ll_{heading}h_{self.return_size}s.png"
+        file_name = f"{location}ll_{heading}h_{self.return_size}s.png"
+        file_path = os.path.join(dir, file_name)
 
-        return path
+        return file_name, file_path
 
     def scrape_image(self, location, pano_id, image_path, heading=0):
         url = f"https://www.google.com/maps/@{location},3a,90y,{heading}h,90t/data=!3m6!1e1!3m4!1s{pano_id}!2e0!7i16384!8i8192"  #a: idk, y: fov, h: heading, t: idk
@@ -171,7 +173,7 @@ class ImageFetcher:
 
     def generate_image(self, dir):
         location, metadata, heading = self.generate_location()
-        image_path = self.generate_path(location, dir, heading)
+        image_name, image_path = self.generate_path(location, dir, heading)
 
         if self.generator_method == "scrape":
             self.scrape_image(location, metadata["pano_id"], image_path, heading=heading)
@@ -179,4 +181,4 @@ class ImageFetcher:
             image = self.query_image(location, heading=heading)
             self.save_image(image, image_path)
 
-        return image_path, location
+        return image_name, location

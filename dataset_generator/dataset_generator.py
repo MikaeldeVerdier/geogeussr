@@ -26,10 +26,10 @@ class DatasetGenerator:
         fetcher = ImageFetcher(self.shapefile_path, self.api_key, self.secret, self.streetview_base_url, image_size, self.location_tolerance, self.generator_method)
 
         for i in range(amount_images):
-            image_path, location = fetcher.generate_image(dir)
+            image_name, location = fetcher.generate_image(dir)
             lat, lng = location.split(",")
             annotation = {
-                "image_path": image_path,
+                "image_name": image_name,
                 "location": {
                     "lat": float(lat),
                     "lng": float(lng)

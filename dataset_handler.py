@@ -30,7 +30,7 @@ class DatasetHandler:
         self.gm = self.gm.fit(self.coords)
     """
 
-    def prepare_model(self, model):
+    def prepare_model(self, model):  # Could save this in annotations and then just load it instead of having to do this double...
         for annotation in self.annotations:
             point = Point(annotation["location"]["lng"], annotation["location"]["lat"])
             country = self.geodf[self.geodf.contains(point)]

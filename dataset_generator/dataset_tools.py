@@ -12,16 +12,15 @@ def combine_dirs(*input_dirs, output_dir):  # TODO: instead of this, just copy t
         old_annotations = load_annotations(input_dir)
 
         for old_annotation in old_annotations:
-            old_path = old_annotation["image_path"]
+            old_path = os.path.join(input_dir, old_annotation["image_name"])
 
             if not os.path.exists(old_path):
                 continue
 
-            new_path = os.path.join(output_dir, old_annotation["image_path"].replace("\\", "/").split("/")[-1])
+            new_path = os.path.join(output_dir, old_annotation["image_name"])
             shutil.copyfile(old_path, new_path)
 
             new_annotations.append(old_annotation)
-            new_annotations[-1]["image_path"] = new_path
 
     save_annotations(new_annotations, output_dir)
 

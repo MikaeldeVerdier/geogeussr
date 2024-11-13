@@ -1,6 +1,4 @@
 from keras.models import load_model
-from keras.optimizers import Adam
-from keras.utils import plot_model
 
 import configs.training_config as train
 import configs.adam_config as adam
@@ -18,10 +16,11 @@ if __name__ == "__main__":
 
     model = FullModel()
     trainer.dataset_handler.prepare_model(model)
-    optimizer = Adam(learning_rate=adam.LEARNING_RATE, beta_1=adam.BETA_1, beta_2=adam.BETA_2)
-    model.compile(optimizer=optimizer, loss=["categorical_crossentropy", RootMeanSquareError()])
-    model.summary()
 
-    trainer.train(model, train.AMOUNT_ITERATIONS)
+    optimizer = trainer.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+    model.compile(optimizer=optimizer, loss=["categorical_crossentropy", RootMeanSquareError()])
+    # model.summary()
+
+    trainer.train(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
 
     model.save(train.MODEL_PATH)

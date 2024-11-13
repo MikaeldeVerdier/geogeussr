@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import random
 import cv2
@@ -35,6 +36,9 @@ class DatasetHandler:
             point = Point(annotation["location"]["lng"], annotation["location"]["lat"])
             country = self.geodf[self.geodf.contains(point)]
 
+            if not len(country.index.values):
+                pass
+
             country_name = country.index.values[0]
             country_index = COUNTRIES.index(country_name)
 
@@ -42,6 +46,15 @@ class DatasetHandler:
                 model.add_regressor(country_index)
 
         model.build((None, model.input_shape[0], model.input_shape[1], model.input_shape[2]))
+
+    def encode_image(self, image_name, input_shape, preprocess_function):
+        image_path = os.path.join(self.dataset_path, image_name)
+
+        img = cv2.imread(image_path)
+        img = cv2.resize(img, input_shape[:-1])
+        preprocessed_image = preprocess_function(img)
+
+        return preprocessed_image
 
     def encode_coords(self, lat, lng):
         point = Point(lng, lat)
@@ -59,23 +72,19 @@ class DatasetHandler:
 
         return [one_hot_country, encoded_coords]
 
-    def generate_batch(self, preprocess_function, input_shape):  # , completion=None):  # this general 'completion' approach is a bit different from the rest of the codebase
+    def generate_batch(self, input_shape, preprocess_function):
         chosen_annotations = random.sample(self.annotations, self.batch_size)
 
-        batch = []
+        x_batch = []
+        y_batch = []
         for annotation in chosen_annotations:
-            img = cv2.imread(annotation["image_path"])
-            img = cv2.resize(img, input_shape[:-1])
-            preprocessed_image = preprocess_function(img)
+            x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
+            x_batch.append(x)
 
-            encoded_data = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
+            y = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
+            y_batch.append(y)
 
-            batch.append([preprocessed_image, encoded_data])
-
-            # if completion is not None:
-            #     completion(encoded_data)
-
-        return batch
+        yield x_batch, y_batch
 
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
         coords = []

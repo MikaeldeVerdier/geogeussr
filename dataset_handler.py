@@ -45,7 +45,7 @@ class DatasetHandler:
             if model.specialized_regressors[country_index] is None:
                 model.add_regressor(country_index)
 
-        model.build((None, model.input_shape[0], model.input_shape[1], model.input_shape[2]))
+        model.build((None, model.used_input_shape[0], model.used_input_shape[1], model.used_input_shape[2]))
 
     def encode_image(self, image_name, input_shape, preprocess_function):
         image_path = os.path.join(self.dataset_path, image_name)
@@ -72,9 +72,9 @@ class DatasetHandler:
 
         return one_hot_country, encoded_coords
 
-    def generate_batch(self, input_shape, preprocess_function, split=1):
+    def generate_batch(self, input_shape, preprocess_function, batch_size):
         while True:
-            chosen_annotations = random.sample(self.annotations, int(round(self.batch_size * split)))
+            chosen_annotations = random.sample(self.annotations, self.batch_size)
 
             x_batch = []
             y_1_batch = []
@@ -87,7 +87,9 @@ class DatasetHandler:
                 y_1_batch.append(y_1)
                 y_2_batch.append(y_2)
 
-            yield np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch))
+            np_return = (np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch)))
+
+            yield np_return
 
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
         coords = []

@@ -18,7 +18,7 @@ class FullModel(Model):
         # self.preprocess_function = lambda x: x / 255
         self.preprocess_func = preprocess_input
 
-        self.input_shape = cls_cnn_cfg.IMAGE_SIZE
+        self.used_input_shape = cls_cnn_cfg.IMAGE_SIZE
 
         if classifier is not None:
             self.classifier = classifier

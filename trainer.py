@@ -57,6 +57,11 @@ class Trainer:
     def train(self, model, iteration_amount, save_ratio):  # kinda makes this class redundant when using a generator...
         metrics = self.load_metrics()
 
+        if "loss" in metrics:
+            start_iteration = len(metrics["loss"])
+        else:
+            start_iteration = 0
+
         checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio))
         
         train_generator = self.dataset_handler.generate_batch(model.input_shape, model.preprocess_func, (1 - train.VALIDATION_SPLIT))
@@ -66,9 +71,9 @@ class Trainer:
             epochs=iteration_amount,
             callbacks=[checkpoint_callback],
             validation_data=validation_generator,
-            initial_epoch=len(metrics["loss"]),
+            initial_epoch=start_iteration,
             steps_per_epoch=1
         )
-        metrics |= history
+        metrics |= history.history
 
         self.save_metrics(metrics)

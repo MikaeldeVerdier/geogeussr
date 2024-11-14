@@ -73,20 +73,21 @@ class DatasetHandler:
         return one_hot_country, encoded_coords
 
     def generate_batch(self, input_shape, preprocess_function, split=1):
-        chosen_annotations = random.sample(self.annotations, int(round(self.batch_size * split)))
+        while True:
+            chosen_annotations = random.sample(self.annotations, int(round(self.batch_size * split)))
 
-        x_batch = []
-        y_1_batch = []
-        y_2_batch = []
-        for annotation in chosen_annotations:
-            x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
-            x_batch.append(x)
+            x_batch = []
+            y_1_batch = []
+            y_2_batch = []
+            for annotation in chosen_annotations:
+                x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
+                x_batch.append(x)
 
-            y_1, y_2 = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
-            y_1_batch.append(y_1)
-            y_2_batch.append(y_2)
+                y_1, y_2 = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
+                y_1_batch.append(y_1)
+                y_2_batch.append(y_2)
 
-        yield np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch))
+            yield np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch))
 
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
         coords = []

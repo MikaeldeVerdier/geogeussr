@@ -37,7 +37,7 @@ class DatasetHandler:
             country = self.geodf[self.geodf.contains(point)]
 
             if not len(country.index.values):
-                pass
+                continue
 
             country_name = country.index.values[0]
             country_index = COUNTRIES.index(country_name)
@@ -70,21 +70,23 @@ class DatasetHandler:
 
         encoded_coords = np.array([local_x / 1000, local_y / 1000])  # in km now  # to decode: * 1000
 
-        return [one_hot_country, encoded_coords]
+        return one_hot_country, encoded_coords
 
-    def generate_batch(self, input_shape, preprocess_function):
-        chosen_annotations = random.sample(self.annotations, self.batch_size)
+    def generate_batch(self, input_shape, preprocess_function, split=1):
+        chosen_annotations = random.sample(self.annotations, int(round(self.batch_size * split)))
 
         x_batch = []
-        y_batch = []
+        y_1_batch = []
+        y_2_batch = []
         for annotation in chosen_annotations:
             x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
             x_batch.append(x)
 
-            y = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
-            y_batch.append(y)
+            y_1, y_2 = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
+            y_1_batch.append(y_1)
+            y_2_batch.append(y_2)
 
-        yield x_batch, y_batch
+        yield np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch))
 
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
         coords = []

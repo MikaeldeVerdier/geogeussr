@@ -1,3 +1,4 @@
+import os
 import json
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
@@ -26,13 +27,18 @@ class Trainer:
         return optimizer
 
     def load_metrics(self):
-        with open(f"{train.SAVE_PATH}/metrics.json", "r") as f:
+        path = os.path.join(train.SAVE_PATH, "metrics.json")
+        if not os.path.exists(path):
+            return {}
+
+        with open(path, "r") as f:
             metrics = json.load(f)
 
         return metrics
 
     def save_metrics(self, metrics):
-        with open(f"{train.SAVE_PATH}/metrics.json", "r") as f:
+        path = os.path.join(train.SAVE_PATH, "metrics.json")
+        with open(path, "r") as f:
             json.dump(metrics, f)
 
     def create_checkpoint_callback(self, save_freq):
@@ -52,12 +58,16 @@ class Trainer:
         metrics = self.load_metrics()
 
         checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio))
+        
+        train_generator = self.dataset_handler.generate_batch(model.input_shape, model.preprocess_func, (1 - train.VALIDATION_SPLIT))
+        validation_generator = self.dataset_handler.generate_batch(model.input_shape, model.preprocess_func, (train.VALIDATION_SPLIT))
         history = model.fit(
-            self.dataset_handler.generate_batch(model.input_shape, model.preprocess_func),
+            train_generator,
             epochs=iteration_amount,
             callbacks=[checkpoint_callback],
-            steps_per_epoch=1,
-            validation_split=self.validation_split
+            validation_data=validation_generator,
+            initial_epoch=len(metrics["loss"]),
+            steps_per_epoch=1
         )
         metrics |= history
 

@@ -10,10 +10,10 @@ from dataset_handler import DatasetHandler
 from callbacks import ModelCheckpointWithHistory
 
 class Trainer:
-    def __init__(self, dataset_path, batch_size, shapefile_path, validation_split):
+    def __init__(self, dataset_path, batch_size, validation_split):
         self.validation_split = validation_split
 
-        self.dataset_handler = DatasetHandler(dataset_path, batch_size, shapefile_path)
+        self.dataset_handler = DatasetHandler(dataset_path, batch_size)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 

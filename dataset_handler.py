@@ -2,24 +2,22 @@ import os
 import numpy as np
 import random
 import cv2
-import geopandas as gpd
 import pyproj
-from shapely.geometry import Point
 
 from files import load_annotations
 from countries import *
 
 class DatasetHandler:
-    def __init__(self, dataset_path, batch_size, shapefile_path):
+    def __init__(self, dataset_path, batch_size):
         self.dataset_path = dataset_path
         self.batch_size = batch_size
 
         self.annotations = load_annotations(dataset_path)
 
-        self.geodf = gpd.read_file(shapefile_path)
-        self.geodf = self.geodf.dissolve(by="GID_0")
-        if self.geodf.crs != "EPSG:4326":  # used for accurate centroid later
-            self.geodf = self.geodf.to_crs("EPSG:4326")
+        # self.geodf = gpd.read_file(shapefile_path)
+        # self.geodf = self.geodf.dissolve(by="GID_0")
+        # if self.geodf.crs != "EPSG:4326":  # used for accurate centroid later
+        #     self.geodf = self.geodf.to_crs("EPSG:4326")
 
         # self.generate_clusters(num_clusters)
 
@@ -33,13 +31,7 @@ class DatasetHandler:
 
     def prepare_model(self, model):  # Could save this in annotations and then just load it instead of having to do this double...
         for annotation in self.annotations:
-            point = Point(annotation["location"]["lng"], annotation["location"]["lat"])
-            country = self.geodf[self.geodf.contains(point)]
-
-            if not len(country.index.values):
-                continue
-
-            country_name = country.index.values[0]
+            country_name = annotation["location"]["country"]
             country_index = COUNTRIES.index(country_name)
 
             if model.specialized_regressors[country_index] is None:
@@ -56,16 +48,13 @@ class DatasetHandler:
 
         return preprocessed_image
 
-    def encode_coords(self, lat, lng):
-        point = Point(lng, lat)
-        country = self.geodf[self.geodf.contains(point)]
+    def encode_coords(self, country_name, lat, lng):
+        country_index = COUNTRIES.index(country_name)
+        one_hot_country = np.eye(len(COUNTRIES))[country_index]  # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
 
-        country_name = country.index.values[0]
-        one_hot_country = np.eye(len(COUNTRIES))[COUNTRIES.index(country_name)]  # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
-
-        origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]  # don't like but I think it's fine because it's just one entry
+        origin = COUNTRY_ORIGINGS[country_index]  # don't like but I think it's fine because it's just one entry
         # origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326").iloc[0]  # don't like but I think it's fine because it's just one entry
-        proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # Azimuthal equidistant projection for accurate (x, y) coordinates
+        proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # Azimuthal equidistant projection for accurate (x, y) coordinates
         local_x, local_y = proj(lng, lat)  # DECODE COORDS IS JUST proj(local_x, local_y, inverse=True)
 
         encoded_coords = np.array([local_x / 1000, local_y / 1000])  # in km now  # to decode: * 1000
@@ -74,7 +63,7 @@ class DatasetHandler:
 
     def generate_batch(self, input_shape, preprocess_function, batch_size):
         while True:
-            chosen_annotations = random.sample(self.annotations, self.batch_size)
+            chosen_annotations = random.sample(self.annotations, batch_size)
 
             x_batch = []
             y_1_batch = []
@@ -83,7 +72,7 @@ class DatasetHandler:
                 x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
                 x_batch.append(x)
 
-                y_1, y_2 = self.encode_coords(annotation["location"]["lat"], annotation["location"]["lng"])
+                y_1, y_2 = self.encode_coords(annotation["location"]["country"], annotation["location"]["lat"], annotation["location"]["lng"])
                 y_1_batch.append(y_1)
                 y_2_batch.append(y_2)
 
@@ -94,15 +83,14 @@ class DatasetHandler:
     def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
         coords = []
         for batch_probs, batch_vals in zip(class_probs, regressed_values):
-            country_name = COUNTRIES[np.argmax(batch_probs, axis=-1)]
-            country = self.geodf[self.geodf.index == country_name]
+            country_index = np.argmax(batch_probs, axis=-1)
 
-            origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326")._values[0]
+            origin = COUNTRY_ORIGINGS[country_index]
 
             local_x = batch_vals[0] * 1000
             local_y = batch_vals[1] * 1000
 
-            proj = pyproj.Proj(proj="aeqd", lat_0=origin.y, lon_0=origin.x)  # could store these from encoding
+            proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # could store these from encoding
             lng, lat = proj(local_x, local_y, inverse=True)
 
             coords.append([lat, lng])

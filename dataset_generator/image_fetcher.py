@@ -90,8 +90,10 @@ class ImageFetcher:
 
             num_attempts += 1
 
+        country_name = chosen_entry.index.values[0]
+
         print()
-        print(f"In {num_attempts} attempts, a valid location was found:")
+        print(f"In {num_attempts} attempts, a valid location was found in {country_name}:")
         print(f"Initial location: {initial_location}")
         exact_location = f"{metadata['location']['lat']},{metadata['location']['lng']}"
         print(f"Exact location: {exact_location}")
@@ -99,7 +101,7 @@ class ImageFetcher:
         heading = random.uniform(0, 360)
         print(f"Heading: {heading}")
 
-        return exact_location, metadata, heading
+        return country_name, exact_location, metadata, heading
 
     def generate_path(self, location, dir, heading):
         file_name = f"{location}ll_{heading}h_{self.return_size}s.png"
@@ -172,7 +174,7 @@ class ImageFetcher:
         image.save(path)
 
     def generate_image(self, dir):
-        location, metadata, heading = self.generate_location()
+        country, location, metadata, heading = self.generate_location()
         image_name, image_path = self.generate_path(location, dir, heading)
 
         if self.generator_method == "scrape":
@@ -181,4 +183,4 @@ class ImageFetcher:
             image = self.query_image(location, heading=heading)
             self.save_image(image, image_path)
 
-        return image_name, location
+        return image_name, country, location

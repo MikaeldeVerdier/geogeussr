@@ -11,7 +11,7 @@ from visualizer.visualize_gmm import visualize_gmm
 if __name__ == "__main__":
     # model = load_model(train.MODEL_PATH, custom_objects={"RootMeanSquareError": RootMeanSquareError})
 
-    trainer = Trainer(train.DATASET_PATH, train.BATCH_SIZE, train.SHAPEFILE_PATH, train.VALIDATION_SPLIT)
+    trainer = Trainer(train.DATASET_PATH, train.BATCH_SIZE, train.VALIDATION_SPLIT)
     # visualize_gmm(trainer.dataset_handler.gm, trainer.dataset_handler.coords, save_path="clusters.png", shapefile_path="dataset_generator/gadm_410.gpkg")
 
     model = FullModel()

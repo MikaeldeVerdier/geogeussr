@@ -95,23 +95,23 @@ class Trainer:
         start_iteration = 0  # self.get_start_iteration()
 
         # Classifier training
-        checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), "classifier")
+        # checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), "classifier")
 
-        train_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, (1 - train.VALIDATION_SPLIT))
-        validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, train.VALIDATION_SPLIT)
+        # train_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, (1 - train.VALIDATION_SPLIT))
+        # validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, train.VALIDATION_SPLIT)
 
-        print(f"Training classifier for {iteration_amount} iterations")
-        model.classifier.fit(
-            train_generator,
-            epochs=iteration_amount,
-            callbacks=[checkpoint_callback],
-            validation_data=validation_generator,
-            initial_epoch=start_iteration,
-            steps_per_epoch=1
-        )
+        # print(f"Training classifier for {iteration_amount} iterations")
+        # model.classifier.fit(
+        #     train_generator,
+        #     epochs=iteration_amount,
+        #     callbacks=[checkpoint_callback],
+        #     validation_data=validation_generator,
+        #     initial_epoch=start_iteration,
+        #     steps_per_epoch=1
+        # )
 
         # Regressors training
-        for country_name in self.dataset_handler.unique_countries:
+        for country_name, annotation_count in zip(self.dataset_handler.unique_countries, self.dataset_handler.annotation_counts):
             country_index = COUNTRIES.index(country_name)
             regressor = model.specialized_regressors[country_index]
 
@@ -120,13 +120,15 @@ class Trainer:
             train_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, (1 - train.VALIDATION_SPLIT))
             validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, train.VALIDATION_SPLIT)
 
-            print(f"Training regressor ({country_name}) for {iteration_amount} iterations")
+            used_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
+
+            print(f"Training regressor ({country_name}) for {used_iteration_amount} iterations")
             regressor.fit(
                 train_generator,
                 epochs=iteration_amount,
                 callbacks=[checkpoint_callback],
                 validation_data=validation_generator,
-                initial_epoch=start_iteration,
+                initial_epoch=used_iteration_amount,
                 steps_per_epoch=1
             )
         # metrics |= history.history

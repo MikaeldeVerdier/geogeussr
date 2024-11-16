@@ -13,7 +13,7 @@ class DatasetHandler:
         self.batch_size = batch_size
 
         self.annotations = load_annotations(dataset_path)
-        self.unique_countries = np.unique([annotation["location"]["country"] for annotation in self.annotations])
+        self.unique_countries, self.annotation_counts = np.unique([annotation["location"]["country"] for annotation in self.annotations], return_counts=True)
 
         # self.geodf = gpd.read_file(shapefile_path)
         # self.geodf = self.geodf.dissolve(by="GID_0")

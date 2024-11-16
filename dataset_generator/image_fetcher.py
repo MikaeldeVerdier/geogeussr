@@ -26,18 +26,20 @@ class ImageFetcher:
         self.location_tolerance = location_tolerance
         self.generator_method = generator_method
 
-        self.use_shapefile = shapefile_path is not None
+        self.setup_geodf(shapefile_path)
+        self.setup_webdriver(generator_method, return_size)
 
-        if self.use_shapefile:
-            self.geodf = gpd.read_file(shapefile_path)
-            self.geodf = self.geodf.dissolve(by="GID_0")
+    def setup_geodf(self, shapefile_path):
+        self.geodf = gpd.read_file(shapefile_path)
+        self.geodf = self.geodf.dissolve(by="GID_0")
 
-            areadf = self.geodf.to_crs("EPSG:6933")  # For accurate area, an equal-area projection is used
-            self.areas = areadf.geometry.area
+        areadf = self.geodf.to_crs("EPSG:6933")  # For accurate area, an equal-area projection is used
+        self.areas = areadf.geometry.area
 
-            if self.geodf.crs != "EPSG:4326":
-                self.geodf = self.geodf.to_crs("EPSG:4326")  # Lat, lng
+        if self.geodf.crs != "EPSG:4326":
+            self.geodf = self.geodf.to_crs("EPSG:4326")  # Lat, lng
 
+    def setup_webdriver(self, generator_method, return_size):
         if generator_method == "scrape":
             chrome_options = Options()
             chrome_options.add_argument("--headless")
@@ -63,21 +65,17 @@ class ImageFetcher:
 
         return metadata
 
-    def generate_location(self, lat_range=(-90, 90), lng_range=(-180, 180)):
+    def generate_location(self):
         num_attempts = 0
         timed_out_attempts = 0
         metadata = {"status": ""}
         while metadata["status"] != "OK":  # try a random point until a location within location_tolerance is accepted
-            if self.use_shapefile:
-                chosen_id = random.choices(self.geodf["UID"]._values, weights=self.areas)[0]  # Could generate all locations that will be used in one
-                chosen_entry = self.geodf[self.geodf["UID"] == chosen_id]
-                points = chosen_entry.sample_points(1)
+            chosen_id = random.choices(self.geodf["UID"]._values, weights=self.areas)[0]  # Could generate all locations that will be used in one
+            chosen_entry = self.geodf[self.geodf["UID"] == chosen_id]
+            points = chosen_entry.sample_points(1)
 
-                lat = points.geometry.y._values[0]
-                lng = points.geometry.x._values[0]
-            else:
-                lat = random.uniform(lat_range[0], lat_range[1])
-                lng = random.uniform(lng_range[0], lng_range[1])
+            lat = points.geometry.y._values[0]
+            lng = points.geometry.x._values[0]
 
             initial_location = f"{lat},{lng}"
             # print(initial_location)

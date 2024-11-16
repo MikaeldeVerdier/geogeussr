@@ -48,9 +48,13 @@ class DatasetHandler:
 
         return preprocessed_image
 
-    def encode_coords(self, country_name, lat, lng):
+    def encode_location(self, location):
+        lat = location["lat"]
+        lng = location["lng"]
+        country_name = location["country"]
+
         country_index = COUNTRIES.index(country_name)
-        one_hot_country = np.eye(len(COUNTRIES))[country_index]  # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
+        one_hot_country = np.eye(len(COUNTRIES))[country_index]  # Really should check output_shape for the classifier (num_classes) # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
 
         origin = COUNTRY_ORIGINGS[country_index]  # don't like but I think it's fine because it's just one entry
         # origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326").iloc[0]  # don't like but I think it's fine because it's just one entry
@@ -72,7 +76,7 @@ class DatasetHandler:
                 x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
                 x_batch.append(x)
 
-                y_1, y_2 = self.encode_coords(annotation["location"]["country"], annotation["location"]["lat"], annotation["location"]["lng"])
+                y_1, y_2 = self.encode_location(annotation["location"])
                 y_1_batch.append(y_1)
                 y_2_batch.append(y_2)
 
@@ -80,7 +84,7 @@ class DatasetHandler:
 
             yield np_return
 
-    def decode_predictions(self, class_probs, regressed_values):  # doesn't really fit here but this is where shapefile is loaded so
+    def decode_predictions(self, class_probs, regressed_values):
         coords = []
         for batch_probs, batch_vals in zip(class_probs, regressed_values):
             country_index = np.argmax(batch_probs, axis=-1)

@@ -9,6 +9,7 @@ import urllib.parse as urlparse
 import geopandas as gpd
 from PIL import Image
 from time import sleep
+from shapely import Point
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -90,7 +91,16 @@ class ImageFetcher:
 
             num_attempts += 1
 
-        country_name = chosen_entry.index.values[0]
+        chosen_point = Point(metadata["location"]["lng"], metadata["location"]["lat"])
+        if not chosen_entry.contains(chosen_point)._values[0]:
+            # point_gdf = gpd.GeoDataFrame([{"geometry": chosen_point}], crs="EPSG:4326")
+            # nearest = self.geodf.to_crs("EPSG:3857").sjoin_nearest(point_gdf.to_crs("EPSG:3857"))
+            # print(nearest)
+
+            distances = self.geodf.geometry.distance(chosen_point)
+            country_name = distances.idxmin()
+        else:
+            country_name = chosen_entry.index.values[0]
 
         print()
         print(f"In {num_attempts} attempts, a valid location was found in {country_name}:")

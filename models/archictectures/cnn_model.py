@@ -10,6 +10,7 @@ class ConvolutionalNeuralNetwork(Model):
         self.num_unfrozen_base_layers = num_unfrozen_base_layers
 
         self.convolutional_layers = [Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu", kernel_initializer=kernel_initializer, kernel_regularizer=L2(l2_reg)) for _ in range(num_layers)]
+        self.pool = GlobalAveragePooling2D()
         self.dense_head = [Dense(num_neuron, activation="relu") for num_neuron in dense_layers] + [Dense(num_classes, activation=final_activation)]
 
         self.build(input_shape)
@@ -29,7 +30,7 @@ class ConvolutionalNeuralNetwork(Model):
 
         for convolutional_layer in self.convolutional_layers:
             x = convolutional_layer(x)
-        x = GlobalAveragePooling2D()(x)
+        x = self.pool(x)
 
         for dense_layer in self.dense_head:
             x = dense_layer(x)

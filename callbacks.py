@@ -9,9 +9,7 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
         self.history = {}
 
     def on_train_batch_end(self, batch, logs=None):
-        print("BATCH END")
         if self._should_save_on_batch(batch):
-            print("SAVING")
             self.history = {key: self.history.get(key, []) + [value] for key, value in logs.items()}
 
             with open(self.history_filepath, 'w') as f:

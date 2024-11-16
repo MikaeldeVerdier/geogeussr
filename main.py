@@ -13,7 +13,6 @@ if __name__ == "__main__":
     # visualize_gmm(trainer.dataset_handler.gm, trainer.dataset_handler.coords, save_path="clusters.png", shapefile_path="dataset_generator/gadm_410.gpkg")
 
     model = FullModel()
-    trainer.prepare_models(model)
 
     # optimizer = trainer.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
     # model.compile(optimizer=optimizer, loss=["categorical_crossentropy", RootMeanSquareError()])

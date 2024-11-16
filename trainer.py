@@ -48,11 +48,6 @@ class Trainer:
 
     #     return csv_logger_callback
 
-    def prepare_models(self, model):  # Could save this in annotations and then just load it instead of having to do this double...
-        for country_name in self.dataset_handler.unique_countries:
-            country_index = COUNTRIES.index(country_name)
-
-
     def create_checkpoint_callback(self, save_freq, name):
         history_filepath = f"{train.SAVE_PATH}/{name}_training_log.json"
         checkpoint_filepath = train.SAVE_PATH + "/{epoch}_" + f"{name}_{train.MODEL_NAME}"  # can't use f-strings because need to format epoch

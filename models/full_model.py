@@ -1,7 +1,9 @@
 import tensorflow as tf
 from keras.models import Model
+from keras.applications import VGG16
 from keras.applications.vgg16 import preprocess_input
 
+import configs.full_model_config as model_cfg
 import configs.classifier_configs.cnn_config as cls_cnn_cfg
 import configs.classifier_configs.vit_config as cls_vit_cfg
 import configs.regressor_configs.cnn_config as reg_cnn_cfg
@@ -18,15 +20,18 @@ class FullModel(Model):
         # self.preprocess_function = lambda x: x / 255
         self.preprocess_func = preprocess_input
 
-        self.used_input_shape = cls_cnn_cfg.IMAGE_SIZE
+        self.used_input_shape = model_cfg.IMAGE_SIZE
+
+        base_network = VGG16(include_top=False, weights="imagenet", input_shape=self.used_input_shape)
+        self.base_layers = base_network.layers[1:-model_cfg.UNFROZEN_BASE_LAYERS]
 
         if classifier is not None:
             self.classifier = classifier
         else:
             # self.classifier = VisionTransformer(cls_vit_cfg.NUM_PATCHES, cls_vit_cfg.PATCH_SIZE, cls_vit_cfg.D_MODEL, cls_vit_cfg.NUM_LAYERS, cls_vit_cfg.NUM_HEADS, cls_vit_cfg.MLP_DIM, cls_vit_cfg.NUM_CLASSES)
             self.classifier = ConvolutionalNeuralNetwork(
-                cls_cnn_cfg.IMAGE_SIZE,
-                cls_cnn_cfg.UNFROZEN_BASE_LAYERS,
+                model_cfg.IMAGE_SIZE,
+                model_cfg.UNFROZEN_BASE_LAYERS,
                 cls_cnn_cfg.NUM_LAYERS,
                 cls_cnn_cfg.DENSE_LAYERS,
                 cls_cnn_cfg.NUM_CLASSES,
@@ -47,9 +52,22 @@ class FullModel(Model):
                 # for _ in range(cls_vit_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
             ]
 
+    def base_process(self, inputs):  # is pretty much just first part of call
+        x = preprocess_input(inputs)
+
+        for layer in self.base_layers:
+            x = layer(x)
+
+        return x.numpy()
+
     @tf.function
     def call(self, inputs):
-        class_probs = self.classifier(inputs)
+        x = inputs
+        for layer in self.base_layers:
+            x = layer(x)
+        base_outputs = x
+
+        class_probs = self.classifier(base_outputs)
         predicted_classes = tf.cast(tf.argmax(class_probs, axis=-1), tf.int32)  # for some reason switch_case requires this
 
         """
@@ -71,14 +89,14 @@ class FullModel(Model):
         # regressed_values = tf.vectorized_map(regressors, inputs)
         # # regressed_values = tf.switch_case(predicted_classes, lamb_regressors)
 
-        regressed_values = tf.zeros((tf.shape(inputs)[0], reg_cnn_cfg.NUM_CLASSES), dtype=tf.float32)
+        regressed_values = tf.zeros((tf.shape(base_outputs)[0], reg_cnn_cfg.NUM_CLASSES), dtype=tf.float32)
         for idx, regressor in enumerate(self.specialized_regressors):
             if regressor is None:
                 continue
 
             used_mask = predicted_classes == idx
             if tf.reduce_any(used_mask):
-                masked_inputs = tf.boolean_mask(inputs, used_mask)
+                masked_inputs = tf.boolean_mask(base_outputs, used_mask)
                 masked_outputs = regressor(masked_inputs)
 
                 output_mask_indices = tf.where(used_mask)
@@ -106,8 +124,8 @@ class FullModel(Model):
         print(f"ADDING REGRESSOR FOR: {COUNTRIES[index]}")
 
         regressor = ConvolutionalNeuralNetwork(
-            cls_cnn_cfg.IMAGE_SIZE,
-            reg_cnn_cfg.UNFROZEN_BASE_LAYERS,
+            model_cfg.IMAGE_SIZE,
+            model_cfg.UNFROZEN_BASE_LAYERS,
             reg_cnn_cfg.NUM_LAYERS,
             reg_cnn_cfg.DENSE_LAYERS,
             reg_cnn_cfg.NUM_CLASSES,

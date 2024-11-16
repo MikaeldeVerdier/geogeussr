@@ -13,6 +13,7 @@ class DatasetHandler:
         self.batch_size = batch_size
 
         self.annotations = load_annotations(dataset_path)
+        self.unique_countries = np.unique([annotation["location"]["country"] for annotation in self.annotations])
 
         # self.geodf = gpd.read_file(shapefile_path)
         # self.geodf = self.geodf.dissolve(by="GID_0")
@@ -29,58 +30,51 @@ class DatasetHandler:
         self.gm = self.gm.fit(self.coords)
     """
 
-    def prepare_model(self, model):  # Could save this in annotations and then just load it instead of having to do this double...
-        for annotation in self.annotations:
-            country_name = annotation["location"]["country"]
-            country_index = COUNTRIES.index(country_name)
-
-            if model.specialized_regressors[country_index] is None:
-                model.add_regressor(country_index)
-
-        model.build((None, model.used_input_shape[0], model.used_input_shape[1], model.used_input_shape[2]))
-
     def encode_image(self, image_name, input_shape, preprocess_function):
         image_path = os.path.join(self.dataset_path, image_name)
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
-        preprocessed_image = preprocess_function(img)
+        preprocessed_image = preprocess_function(img[None])[0]
 
         return preprocessed_image
 
-    def encode_location(self, location):
-        lat = location["lat"]
-        lng = location["lng"]
-        country_name = location["country"]
-
-        country_index = COUNTRIES.index(country_name)
+    def encode_location(self, location, index):
+        country_index = COUNTRIES.index(location["country"])
         one_hot_country = np.eye(len(COUNTRIES))[country_index]  # Really should check output_shape for the classifier (num_classes) # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
+
+        if index == 0:
+            return one_hot_country
 
         origin = COUNTRY_ORIGINGS[country_index]  # don't like but I think it's fine because it's just one entry
         # origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326").iloc[0]  # don't like but I think it's fine because it's just one entry
         proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # Azimuthal equidistant projection for accurate (x, y) coordinates
-        local_x, local_y = proj(lng, lat)  # DECODE COORDS IS JUST proj(local_x, local_y, inverse=True)
+        local_x, local_y = proj(location["lng"], location["lat"])  # DECODE COORDS IS JUST proj(local_x, local_y, inverse=True)
 
         encoded_coords = np.array([local_x / 1000, local_y / 1000])  # in km now  # to decode: * 1000
 
-        return one_hot_country, encoded_coords
+        return encoded_coords
 
-    def generate_batch(self, input_shape, preprocess_function, batch_size):
+    def generate_batch(self, input_shape, preprocess_function, country_name, y_index, batch_size):
+        if country_name is not None:
+            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
+        else:
+            country_annotations = self.annotations
+
         while True:
-            chosen_annotations = random.sample(self.annotations, batch_size)
+            chosen_annotations = random.sample(country_annotations, min(batch_size, len(country_annotations)))
 
             x_batch = []
-            y_1_batch = []
-            y_2_batch = []
+            y_batch = []
             for annotation in chosen_annotations:
                 x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
                 x_batch.append(x)
 
-                y_1, y_2 = self.encode_location(annotation["location"])
-                y_1_batch.append(y_1)
-                y_2_batch.append(y_2)
+                y = self.encode_location(annotation["location"], y_index)
+                # y_1_batch.append(y_1)
+                y_batch.append(y)
 
-            np_return = (np.array(x_batch), (np.array(y_1_batch), np.array(y_2_batch)))
+            np_return = (np.array(x_batch), np.array(y_batch))
 
             yield np_return
 

@@ -120,9 +120,7 @@ class FullModel(Model):
 
         return cls(classifier=classifier, specialized_regressors=specialized_regressors, **config)
 
-    def add_regressor(self, index):
-        print(f"ADDING REGRESSOR FOR: {COUNTRIES[index]}")
-
+    def create_regressor(self):
         regressor = ConvolutionalNeuralNetwork(
             model_cfg.IMAGE_SIZE,
             model_cfg.UNFROZEN_BASE_LAYERS,
@@ -133,4 +131,11 @@ class FullModel(Model):
             reg_cnn_cfg.KERNEL_INITIALIZER,
             reg_cnn_cfg.L2_REG
         )
+
+        return regressor
+
+    def add_regressor(self, index):
+        print(f"ADDING REGRESSOR FOR: {COUNTRIES[index]}")
+
+        regressor = self.create_regressor()
         self.specialized_regressors[index] = regressor

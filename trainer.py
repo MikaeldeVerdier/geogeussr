@@ -49,17 +49,9 @@ class Trainer:
     #     return csv_logger_callback
 
     def prepare_models(self, model):  # Could save this in annotations and then just load it instead of having to do this double...
-        optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-        model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
-
         for country_name in self.dataset_handler.unique_countries:
             country_index = COUNTRIES.index(country_name)
 
-            if model.specialized_regressors[country_index] is None:
-                model.add_regressor(country_index)
-
-            optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-            model.specialized_regressors[country_index].compile(optimizer=optimizer, loss=[RootMeanSquareError()])
 
     def create_checkpoint_callback(self, save_freq, name):
         history_filepath = f"{train.SAVE_PATH}/{name}_training_log.json"
@@ -95,6 +87,9 @@ class Trainer:
         start_iteration = 0  # self.get_start_iteration()
 
         # Classifier training
+        optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+        model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
+
         checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), "classifier")
 
         train_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, (1 - train.VALIDATION_SPLIT))
@@ -112,15 +107,18 @@ class Trainer:
 
         # Regressors training
         for country_name, annotation_count in zip(self.dataset_handler.unique_countries, self.dataset_handler.annotation_counts):
-            country_index = COUNTRIES.index(country_name)
-            regressor = model.specialized_regressors[country_index]
+            used_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
+            if used_iteration_amount == 0:
+                continue
+
+            regressor = model.create_regressor()
+            optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+            regressor.compile(optimizer=optimizer, loss=[RootMeanSquareError()])
 
             checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), country_name)
 
             train_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, (1 - train.VALIDATION_SPLIT))
             validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, train.VALIDATION_SPLIT)
-
-            used_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
 
             print(f"Training regressor ({country_name}) for {used_iteration_amount} iterations")
             regressor.fit(

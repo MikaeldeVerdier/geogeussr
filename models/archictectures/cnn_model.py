@@ -1,6 +1,4 @@
 from keras.applications import VGG16
-from keras.applications.vgg16 import preprocess_input
-from keras.models import Model
 from keras.layers import Conv2D, GlobalAveragePooling2D, Dense
 from keras.regularizers import L2
 

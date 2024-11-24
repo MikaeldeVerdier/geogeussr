@@ -149,7 +149,7 @@ class Trainer:
         for country_name, annotation_count in zip(self.dataset_handler.unique_countries, self.dataset_handler.annotation_counts):
             country_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
             if country_iteration_amount == 0:
-                print(f"Skipping {country_name}! (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
+                print(f"Skipping {country_name} (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
 
                 continue
 

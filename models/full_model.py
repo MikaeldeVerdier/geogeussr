@@ -1,17 +1,13 @@
 import os
 import tensorflow as tf
-from keras.models import Model, load_model
 from keras.applications import VGG16
 from keras.applications.vgg16 import preprocess_input
 
 import configs.full_model_config as model_cfg
 import configs.classifier_configs.cnn_config as cls_cnn_cfg
-import configs.classifier_configs.vit_config as cls_vit_cfg
 import configs.regressor_configs.cnn_config as reg_cnn_cfg
-import configs.regressor_configs.vit_config as reg_vit_cfg
 from models.subclassed_model import SubclassedModel
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
-from models.archictectures.vit_model import VisionTransformer
 
 from countries import *
 

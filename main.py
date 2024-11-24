@@ -1,8 +1,6 @@
 import configs.training_config as train
 from trainer import Trainer
 from models.full_model import FullModel
-# from models.haversine_loss import HaversineLoss
-# from visualizer.visualize_gmm import visualize_gmm
 
 if __name__ == "__main__":
     # model = FullModel.load(train.MODEL_PATH)

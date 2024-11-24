@@ -20,12 +20,23 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
             if not os.path.exists(folder_to_check):
                 os.mkdir(folder_to_check)  # why doesn't os.mkdir just create all folders?
 
+    def append_to_history(self, logs):
+        self.history |= {
+            key: self.history.get(key, []) + [value]
+            for key, value in logs.items()
+        }
+
     def on_train_batch_end(self, batch, logs=None):
-        copy_self = copy(self)
-        if copy_self._should_save_on_batch(batch):  # TODO: Doesn't work...
-            self.history = {key: self.history.get(key, []) + [value] for key, value in logs.items()}
+        copy_self = copy(self)  # need to copy because calling _should_save_on_batch has a persistent impact
+        if copy_self._should_save_on_batch(batch):
+            self.append_to_history(logs)
 
             with open(self.history_filepath, 'w') as f:
                 json.dump(self.history, f)
 
         super().on_train_batch_end(batch, logs)
+
+    def on_test_batch_end(self, batch, logs=None):
+        self.append_to_history(logs)
+
+        super().on_test_batch_end(batch, logs)

@@ -1,5 +1,4 @@
 from keras.models import Model, load_model
-from keras.layers import Input
 
 class SubclassedModel(Model):
     def __init__(self, **kwargs):

@@ -21,7 +21,9 @@ class FullModel(SubclassedModel):
         self.used_input_shape = model_cfg.IMAGE_SIZE
 
         base_network = VGG16(include_top=False, weights="imagenet", input_shape=self.used_input_shape)
-        self.base_layers = base_network.layers[1:-model_cfg.UNFROZEN_BASE_LAYERS]
+        self.base_layers = base_network.layers[1:-model_cfg.UNFROZEN_BASE_LAYERS]  # doesn't support model_cfg.UNFROZEN_BASE_LAYERS == 0 currently...
+        for base_layer in self.base_layers:
+            base_layer.trainable = False
 
         if classifier is not None:
             self.classifier = classifier

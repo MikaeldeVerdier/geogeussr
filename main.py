@@ -43,11 +43,3 @@ if __name__ == "__main__":
 
     trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     """
-
-    # Plot metrics
-    """
-    from visualizer.metrics_visualizer import MetricsVisualizer
-
-    viz = MetricsVisualizer(train.SAVE_PATH)
-    viz.plot_metrics(["classifier", "SWE"], seperate=True)
-    """

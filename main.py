@@ -5,7 +5,7 @@ from models.full_model import FullModel
 if __name__ == "__main__":
     # model = FullModel.load(train.MODEL_PATH)
 
-    load = True
+    load = False
 
     # Create a trainer (always needed)
     trainer = Trainer(train.DATASET_PATH, train.BATCH_SIZE, train.VALIDATION_SPLIT)
@@ -30,18 +30,24 @@ if __name__ == "__main__":
     else:
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier", train.MODEL_NAME)  # Load a classifier
 
-    trainer.train_classifier(classifier, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     """
 
     # Train a regressor only
     """
-    country_name = "AUS"
+    country_name = "SWE"
     if not load:
         regressor = FullModel.create_regressor()  # Use a new regressor
     else:
         regressor = FullModel.load_submodel(train.SAVE_PATH, country_name, train.MODEL_NAME)  # Load a regressor
 
-    trainer.train_regressor(regressor, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     """
 
-    # model.save(train.MODEL_PATH)
+    # Plot metrics
+    """
+    from visualizer.metrics_visualizer import MetricsVisualizer
+
+    viz = MetricsVisualizer(train.SAVE_PATH)
+    viz.plot_metrics(["classifier", "SWE"], seperate=True)
+    """

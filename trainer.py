@@ -50,10 +50,11 @@ class Trainer:
 
     #     return csv_logger_callback
 
-    def create_checkpoint_callback(self, save_freq, name):
+    def create_checkpoint_callback(self, load, save_freq, name):
         history_filepath = os.path.join(train.SAVE_PATH, name, "training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
         checkpoint_filepath = os.path.join(train.SAVE_PATH, name, train.MODEL_NAME)  # "{epoch}" ?
         model_checkpoint_callback = ModelCheckpointWithHistory(
+            load_initial=load,
             history_filepath=history_filepath,
             filepath=checkpoint_filepath,
             verbose=1,
@@ -79,11 +80,11 @@ class Trainer:
 
         return used_generator
 
-    def train_submodel(self, submodel, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
+    def train_submodel(self, submodel, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
         optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         submodel.compile(optimizer=optimizer, loss=loss)
 
-        checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
+        checkpoint_callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
 
         train_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, (1 - train.VALIDATION_SPLIT))
         validation_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, train.VALIDATION_SPLIT)
@@ -99,21 +100,21 @@ class Trainer:
             steps_per_epoch=1
         )
 
-    def train_classifier(self, classifier, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
+    def train_classifier(self, classifier, load, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
         loss = "categorical_crossentropy"
         y_index = 0
         country_name = None
         name = "classifier"
 
-        self.train_submodel(classifier, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(classifier, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
-    def train_regressor(self, regressor, input_shape, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
+    def train_regressor(self, regressor, load, input_shape, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
         y_index = 1
         country_name = country_name
         name = country_name
 
-        self.train_submodel(regressor, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(regressor, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()
@@ -121,7 +122,7 @@ class Trainer:
         start_iteration = 0  # self.get_start_iteration()
 
         def train_submodel_shortcut(submodel, loss, used_country_name, y_index, used_iteration_amount, name):
-            self.train_submodel(submodel, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
+            self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
         # Classifier training (not trained seperately)
         train_submodel_shortcut(model.classifier, "categorical_crossentropy", None, 0, iteration_amount, "classifier")

@@ -4,9 +4,10 @@ from copy import copy
 from keras.callbacks import ModelCheckpoint
 
 class ModelCheckpointWithHistory(ModelCheckpoint):
-    def __init__(self, history_filepath, **kwargs):
+    def __init__(self, load_initial, history_filepath, **kwargs):
         super().__init__(**kwargs)
 
+        self.load = load_initial
         self.history_filepath = history_filepath
         self.history = {}
 
@@ -20,23 +21,36 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
             if not os.path.exists(folder_to_check):
                 os.mkdir(folder_to_check)  # why doesn't os.mkdir just create all folders?
 
-    def append_to_history(self, logs):
-        self.history |= {
-            key: self.history.get(key, []) + [value]
+    def append_to_history(self, old_logs, logs):
+        appended_logs = {
+            key: old_logs.get(key, []) + (value if isinstance(value, list) else [value])  # ugly
             for key, value in logs.items()
         }
+        new_logs = old_logs | appended_logs
+
+        return new_logs
 
     def on_train_batch_end(self, batch, logs=None):
         copy_self = copy(self)  # need to copy because calling _should_save_on_batch has a persistent impact
         if copy_self._should_save_on_batch(batch):
-            self.append_to_history(logs)
+            self.history = self.append_to_history(self.history, logs)
 
-            with open(self.history_filepath, 'w') as f:
-                json.dump(self.history, f)
+            if self.load and os.path.exists(self.history_filepath):
+                with open(self.history_filepath, "r") as f:
+                    old_metrics = json.load(f)
+            else:
+                old_metrics = {}
+
+            used_metrics = self.append_to_history(old_metrics, self.history)
+            with open(self.history_filepath, "w") as f:
+                json.dump(used_metrics, f)
+
+            self.load = True
+            self.history = {}  # I load them again when it's time to save next
 
         super().on_train_batch_end(batch, logs)
 
     def on_test_batch_end(self, batch, logs=None):
-        self.append_to_history(logs)
+        self.history = self.append_to_history(self.history, logs)
 
         super().on_test_batch_end(batch, logs)

@@ -1,23 +1,49 @@
-from keras.models import load_model
-
 import configs.training_config as train
 from trainer import Trainer
 from models.full_model import FullModel
 # from models.haversine_loss import HaversineLoss
-from visualizer.visualize_gmm import visualize_gmm
+# from visualizer.visualize_gmm import visualize_gmm
 
 if __name__ == "__main__":
-    # model = load_model(train.MODEL_PATH, custom_objects={"RootMeanSquareError": RootMeanSquareError})
+    # model = FullModel.load(train.MODEL_PATH)
 
+    load = True
+
+    # Create a trainer (always needed)
     trainer = Trainer(train.DATASET_PATH, train.BATCH_SIZE, train.VALIDATION_SPLIT)
-    # visualize_gmm(trainer.dataset_handler.gm, trainer.dataset_handler.coords, save_path="clusters.png", shapefile_path="dataset_generator/gadm_410.gpkg")
 
-    model = FullModel()
+    # Create a full model (always needed)
+    if not load:
+        model = FullModel()  # Use a new full model
+    else:
+        model = FullModel.load_self(train.SAVE_PATH, train.MODEL_NAME)  # Load a full model
 
-    # optimizer = trainer.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-    # model.compile(optimizer=optimizer, loss=["categorical_crossentropy", RootMeanSquareError()])
-    # model.summary()
+    # Train the full model
+    # """
+    trainer.train_fullmodel(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, load)
 
-    trainer.train(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    model.save(train.MODEL_PATH)  # double-saves classifier...
+    # """
 
-    model.save(train.MODEL_PATH)
+    """
+    # Train classifier only
+    if not load:
+        classifier = FullModel.create_classifier()  # Use a new classifier
+    else:
+        classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier", train.MODEL_NAME)  # Load a classifier
+
+    trainer.train_classifier(classifier, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    """
+
+    # Train a regressor only
+    """
+    country_name = "AUS"
+    if not load:
+        regressor = FullModel.create_regressor()  # Use a new regressor
+    else:
+        regressor = FullModel.load_submodel(train.SAVE_PATH, country_name, train.MODEL_NAME)  # Load a regressor
+
+    trainer.train_regressor(regressor, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    """
+
+    # model.save(train.MODEL_PATH)

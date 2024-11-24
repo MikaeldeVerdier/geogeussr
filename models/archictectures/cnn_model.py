@@ -4,9 +4,11 @@ from keras.models import Model
 from keras.layers import Conv2D, GlobalAveragePooling2D, Dense
 from keras.regularizers import L2
 
-class ConvolutionalNeuralNetwork(Model):
+from models.subclassed_model import SubclassedModel
+
+class ConvolutionalNeuralNetwork(SubclassedModel):  # don't think this needs to be SubclassedModel...
     def __init__(self, input_shape, unfrozen_base_layers, num_layers, dense_layers, num_classes, final_activation, kernel_initializer, l2_reg):
-        super(ConvolutionalNeuralNetwork, self).__init__()
+        super().__init__(input_shape=input_shape, unfrozen_base_layers=unfrozen_base_layers, num_layers=num_layers, dense_layers=dense_layers, num_classes=num_classes,final_activation=final_activation, kernel_initializer=kernel_initializer, l2_reg=l2_reg)
 
         base_network = VGG16(include_top=False, weights="imagenet", input_shape=input_shape)
 

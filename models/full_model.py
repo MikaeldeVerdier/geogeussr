@@ -1,5 +1,6 @@
+import os
 import tensorflow as tf
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.applications import VGG16
 from keras.applications.vgg16 import preprocess_input
 
@@ -8,14 +9,15 @@ import configs.classifier_configs.cnn_config as cls_cnn_cfg
 import configs.classifier_configs.vit_config as cls_vit_cfg
 import configs.regressor_configs.cnn_config as reg_cnn_cfg
 import configs.regressor_configs.vit_config as reg_vit_cfg
+from models.subclassed_model import SubclassedModel
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
 from models.archictectures.vit_model import VisionTransformer
 
 from countries import *
 
-class FullModel(Model):
-    def __init__(self, classifier=None, specialized_regressors=None, **kwargs):
-        super(FullModel, self).__init__(**kwargs)
+class FullModel(SubclassedModel):
+    def __init__(self, classifier=None, specialized_regressors=None):
+        super().__init__()
 
         # self.preprocess_function = lambda x: x / 255
         self.preprocess_func = preprocess_input
@@ -104,23 +106,39 @@ class FullModel(Model):
 
         return class_probs, regressed_values
 
-    def get_config(self):
-        config = super().get_config()
-        config.update({
-            "classifier": self.classifier,
-            "specialized_regressors": self.specialized_regressors
-        })
+    # def get_config(self):
+    #     config = super().get_config()
+    #     config.update({
+    #         "classifier": self.classifier,
+    #         "specialized_regressors": self.specialized_regressors
+    #     })
 
-        return config
+    #     return config
 
-    @classmethod
-    def from_config(cls, config):
-        classifier = config.pop("classifier")
-        specialized_regressors = config.pop("specialized_regressors")
+    # @classmethod
+    # def from_config(cls, config):
+    #     classifier = config.pop("classifier")
+    #     specialized_regressors = config.pop("specialized_regressors")
 
-        return cls(classifier=classifier, specialized_regressors=specialized_regressors, **config)
+    #     return cls(classifier=classifier, specialized_regressors=specialized_regressors, **config)
 
-    def create_regressor(self):
+    @staticmethod
+    def create_classifier():
+        regressor = ConvolutionalNeuralNetwork(
+            model_cfg.IMAGE_SIZE,
+            model_cfg.UNFROZEN_BASE_LAYERS,
+            cls_cnn_cfg.NUM_LAYERS,
+            cls_cnn_cfg.DENSE_LAYERS,
+            cls_cnn_cfg.NUM_CLASSES,
+            cls_cnn_cfg.FINAL_ACTIVATION,
+            cls_cnn_cfg.KERNEL_INITIALIZER,
+            cls_cnn_cfg.L2_REG
+        )
+
+        return regressor
+
+    @staticmethod
+    def create_regressor():
         regressor = ConvolutionalNeuralNetwork(
             model_cfg.IMAGE_SIZE,
             model_cfg.UNFROZEN_BASE_LAYERS,
@@ -134,8 +152,24 @@ class FullModel(Model):
 
         return regressor
 
-    def add_regressor(self, index):
-        print(f"ADDING REGRESSOR FOR: {COUNTRIES[index]}")
+    # def add_regressor(self, index):
+    #     print(f"ADDING REGRESSOR FOR: {COUNTRIES[index]}")
 
-        regressor = self.create_regressor()
-        self.specialized_regressors[index] = regressor
+    #     regressor = self.create_regressor()
+    #     self.specialized_regressors[index] = regressor
+
+    @staticmethod
+    def load_self(save_path, model_name):
+        path = os.path.join(save_path, model_name)
+        if os.path.exists(path):
+            return FullModel.load(path)
+
+        return None
+
+    @staticmethod
+    def load_submodel(save_path, country_name, model_name):
+        path = os.path.join(save_path, country_name, model_name)
+        if os.path.exists(path):
+            return ConvolutionalNeuralNetwork.load(path)
+
+        return None

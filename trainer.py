@@ -1,3 +1,4 @@
+import os
 # from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.optimizers import Adam
 from keras.optimizers.schedules import ExponentialDecay
@@ -5,6 +6,7 @@ from keras.optimizers.schedules import ExponentialDecay
 import configs.training_config as train
 import configs.adam_config as adam
 from models.losses.root_mean_squared_error import RootMeanSquareError
+from models.full_model import FullModel
 from dataset_handler import DatasetHandler
 from callbacks import ModelCheckpointWithHistory
 from countries import *
@@ -49,8 +51,8 @@ class Trainer:
     #     return csv_logger_callback
 
     def create_checkpoint_callback(self, save_freq, name):
-        history_filepath = f"{train.SAVE_PATH}/{name}_training_log.json"
-        checkpoint_filepath = train.SAVE_PATH + "/{epoch}_" + f"{name}_{train.MODEL_NAME}"  # can't use f-strings because need to format epoch
+        history_filepath = os.path.join(train.SAVE_PATH, name, "training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
+        checkpoint_filepath = os.path.join(train.SAVE_PATH, name, train.MODEL_NAME)  # "{epoch}" ?
         model_checkpoint_callback = ModelCheckpointWithHistory(
             history_filepath=history_filepath,
             filepath=checkpoint_filepath,
@@ -77,53 +79,105 @@ class Trainer:
 
         return used_generator
 
-    def train(self, model, iteration_amount, save_ratio):  # kinda makes this class redundant when using a generator...
-        # metrics = self.load_metrics()
-        start_iteration = 0  # self.get_start_iteration()
-
-        # Classifier training
+    def train_submodel(self, submodel, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
         optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-        model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
+        submodel.compile(optimizer=optimizer, loss=loss)
 
-        checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), "classifier")
+        checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
 
-        train_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, (1 - train.VALIDATION_SPLIT))
-        validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, train.VALIDATION_SPLIT)
+        train_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, (1 - train.VALIDATION_SPLIT))
+        validation_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, train.VALIDATION_SPLIT)
 
-        print(f"Training classifier for {iteration_amount} iterations")
-        model.classifier.fit(
+        print(f"Training {name} for {iteration_amount} iterations")
+        submodel.fit(
             train_generator,
             epochs=iteration_amount,
             callbacks=[checkpoint_callback],
             validation_data=validation_generator,
             initial_epoch=start_iteration,
+            validation_steps=1,
             steps_per_epoch=1
         )
 
-        # Regressors training
+    def train_classifier(self, classifier, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
+        loss = "categorical_crossentropy"
+        y_index = 0
+        country_name = None
+        name = "classifier"
+
+        self.train_submodel(classifier, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+
+    def train_regressor(self, regressor, input_shape, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
+        loss = RootMeanSquareError()
+        y_index = 1
+        country_name = country_name
+        name = country_name
+
+        self.train_submodel(regressor, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+
+    def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
+        # metrics = self.load_metrics()
+
+        start_iteration = 0  # self.get_start_iteration()
+
+        def train_submodel_shortcut(submodel, loss, used_country_name, y_index, used_iteration_amount, name):
+            self.train_submodel(submodel, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
+
+        # Classifier training (not trained seperately)
+        train_submodel_shortcut(model.classifier, "categorical_crossentropy", None, 0, iteration_amount, "classifier")
+
+        # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+        # model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
+
+        # checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), "classifier")
+
+        # train_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, (1 - train.VALIDATION_SPLIT))
+        # validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, None, 0, train.VALIDATION_SPLIT)
+
+        # print(f"Training classifier for {iteration_amount} iterations")
+        # model.classifier.fit(
+        #     train_generator,
+        #     epochs=iteration_amount,
+        #     callbacks=[checkpoint_callback],
+        #     validation_data=validation_generator,
+        #     initial_epoch=start_iteration,
+        #     validation_steps=1,
+        #     steps_per_epoch=1
+        # )
+
+        # Regressors training (trained seperately)
         for country_name, annotation_count in zip(self.dataset_handler.unique_countries, self.dataset_handler.annotation_counts):
-            used_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
-            if used_iteration_amount == 0:
+            country_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
+            if country_iteration_amount == 0:
+                print(f"Skipping {country_name}! (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
+
                 continue
 
-            regressor = model.create_regressor()
-            optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-            regressor.compile(optimizer=optimizer, loss=[RootMeanSquareError()])
+            if load:
+                regressor = FullModel.load_submodel(train.SAVE_PATH, country_name, train.MODEL_NAME)  # don't like having to import FullModel for this
+            if not load or regressor is None:
+                regressor = FullModel.create_regressor()
 
-            checkpoint_callback = self.create_checkpoint_callback(int(iteration_amount * save_ratio), country_name)
+            train_submodel_shortcut(regressor, RootMeanSquareError(), country_name, 1, country_iteration_amount, country_name)
 
-            train_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, (1 - train.VALIDATION_SPLIT))
-            validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, train.VALIDATION_SPLIT)
+            # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+            # regressor.compile(optimizer=optimizer, loss=[RootMeanSquareError()])
 
-            print(f"Training regressor ({country_name}) for {used_iteration_amount} iterations")
-            regressor.fit(
-                train_generator,
-                epochs=used_iteration_amount,
-                callbacks=[checkpoint_callback],
-                validation_data=validation_generator,
-                initial_epoch=start_iteration,
-                steps_per_epoch=1
-            )
+            # checkpoint_callback = self.create_checkpoint_callback(int(used_iteration_amount * save_ratio), country_name)
+
+            # train_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, (1 - train.VALIDATION_SPLIT))
+            # validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, train.VALIDATION_SPLIT)
+
+            # print(f"Training regressor ({country_name}) for {used_iteration_amount} iterations")
+            # regressor.fit(
+            #     train_generator,
+            #     epochs=used_iteration_amount,
+            #     callbacks=[checkpoint_callback],
+            #     validation_data=validation_generator,
+            #     initial_epoch=start_iteration,
+            #     validation_steps=1,
+            #     steps_per_epoch=1
+            # )
         # metrics |= history.history
 
         # self.save_metrics(metrics)

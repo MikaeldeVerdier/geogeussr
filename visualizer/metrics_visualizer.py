@@ -29,6 +29,8 @@ class MetricsVisualizer:
             chosen_submodels = self.metrics
 
         if seperate:
+            chosen_submodels = sorted(chosen_submodels.items(), key=lambda submodel: (submodel[0] != "classifier",))  # make classifier be first
+
             n_rows = int(np.floor(np.sqrt(len(chosen_submodels))))
             n_cols = int(np.ceil(np.sqrt(len(chosen_submodels))))
 
@@ -38,12 +40,14 @@ class MetricsVisualizer:
                 elif n_cols * n_cols >= len(chosen_submodels):
                     n_rows = n_cols 
         else:
+            chosen_submodels = chosen_submodels.items()
+
             n_rows = 1
             n_cols = 1
 
         fig, axs = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows), squeeze=False)
 
-        for i, (submodel_name, submodel_history) in enumerate(chosen_submodels.items()):
+        for i, (submodel_name, submodel_history) in enumerate(chosen_submodels):
             if seperate:
                 row_index = i // n_cols
                 col_index = i % n_cols

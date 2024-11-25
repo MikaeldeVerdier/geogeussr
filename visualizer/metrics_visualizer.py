@@ -41,7 +41,7 @@ class MetricsVisualizer:
             n_rows = 1
             n_cols = 1
 
-        fig, axs = plt.subplots(n_rows, n_cols, squeeze=False)
+        fig, axs = plt.subplots(n_rows, n_cols, figsize=(4 * n_cols, 4 * n_rows), squeeze=False)
 
         for i, (submodel_name, submodel_history) in enumerate(chosen_submodels.items()):
             if seperate:
@@ -86,8 +86,9 @@ class MetricsVisualizer:
                 for ax in axs[row_index, col_index + 1:]:  # can never be more than n_cols - 1 wrong
                     ax.remove()
 
-        fig.suptitle(f"Metrics for {submodels if submodels is not None else 'all'}{' (seperate)' if seperate else ''}")
+        title = ", ".join([text for text, val in [("seperate", seperate), ("scoped", scoped), ("trendline", trendline)] if val])
+        fig.suptitle(f"Metrics for {submodels if submodels is not None else 'all'}{f' ({title})' if title != '' else ''}")
         fig.tight_layout()
 
-        metrics_path = os.path.join(self.save_path, f"metrics_{submodels}_{seperate}.png")
+        metrics_path = os.path.join(self.save_path, f"metrics_{submodels}su_{seperate}se_{scoped}sc_{trendline}t.png")
         plt.savefig(metrics_path)

@@ -15,7 +15,7 @@ class MetricsVisualizer:
             if submodel_dir.endswith(".keras"):
                 continue
             
-            metrics_path = os.path.join(save_path, submodel_dir, "training_log.json")
+            metrics_path = os.path.join(save_path, submodel_dir, f"{submodel_dir}_training_log.json")
             if not os.path.exists(metrics_path):
                 continue
 

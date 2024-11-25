@@ -3,35 +3,33 @@ import tensorflow as tf
 from keras.applications import VGG16
 from keras.applications.vgg16 import preprocess_input
 
-import configs.full_model_config as model_cfg
 import configs.classifier_configs.cnn_config as cls_cnn_cfg
 import configs.regressor_configs.cnn_config as reg_cnn_cfg
-from models.subclassed_model import SubclassedModel
+from models.subclassed_model import SubclassedModelJSON
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
 
 from countries import *
 
-class FullModel(SubclassedModel):
-    def __init__(self, classifier=None, specialized_regressors=None):
-        super().__init__()
+class FullModel(SubclassedModelJSON):
+    def __init__(self, image_size, num_unfrozen_base_layers, initialize_submodels=False):
+        super().__init__(image_size, num_unfrozen_base_layers, initialize_submodels=initialize_submodels)
+
+        self.used_input_shape = image_size
+        self.num_unfrozen_base_layers = num_unfrozen_base_layers
 
         # self.preprocess_function = lambda x: x / 255
         self.preprocess_func = preprocess_input
 
-        self.used_input_shape = model_cfg.IMAGE_SIZE
-
         base_network = VGG16(include_top=False, weights="imagenet", input_shape=self.used_input_shape)
-        self.base_layers = base_network.layers[1:-model_cfg.UNFROZEN_BASE_LAYERS]  # doesn't support model_cfg.UNFROZEN_BASE_LAYERS == 0 currently...
+        self.base_layers = base_network.layers[1:-num_unfrozen_base_layers]  # doesn't support model_cfg.UNFROZEN_BASE_LAYERS == 0 currently...
         for base_layer in self.base_layers:
             base_layer.trainable = False
 
-        if classifier is not None:
-            self.classifier = classifier
-        else:
-            # self.classifier = VisionTransformer(cls_vit_cfg.NUM_PATCHES, cls_vit_cfg.PATCH_SIZE, cls_vit_cfg.D_MODEL, cls_vit_cfg.NUM_LAYERS, cls_vit_cfg.NUM_HEADS, cls_vit_cfg.MLP_DIM, cls_vit_cfg.NUM_CLASSES)
+        # self.classifier = VisionTransformer(cls_vit_cfg.NUM_PATCHES, cls_vit_cfg.PATCH_SIZE, cls_vit_cfg.D_MODEL, cls_vit_cfg.NUM_LAYERS, cls_vit_cfg.NUM_HEADS, cls_vit_cfg.MLP_DIM, cls_vit_cfg.NUM_CLASSES)
+        if initialize_submodels:
             self.classifier = ConvolutionalNeuralNetwork(
-                model_cfg.IMAGE_SIZE,
-                model_cfg.UNFROZEN_BASE_LAYERS,
+                image_size,
+                num_unfrozen_base_layers,
                 cls_cnn_cfg.NUM_LAYERS,
                 cls_cnn_cfg.DENSE_LAYERS,
                 cls_cnn_cfg.NUM_CLASSES,
@@ -39,18 +37,47 @@ class FullModel(SubclassedModel):
                 cls_cnn_cfg.KERNEL_INITIALIZER,
                 cls_cnn_cfg.L2_REG
             )
-
-        if specialized_regressors is not None:
-            self.specialized_regressors = specialized_regressors
         else:
-            self.specialized_regressors = [
-                None
-                # ConvolutionalNeuralNetwork(cls_cnn_cfg.IMAGE_SIZE, reg_cnn_cfg.UNFROZEN_BASE_LAYERS, reg_cnn_cfg.NUM_LAYERS, reg_cnn_cfg.DENSE_LAYERS, reg_cnn_cfg.NUM_CLASSES, reg_cnn_cfg.FINAL_ACTIVATION, reg_cnn_cfg.KERNEL_INITIALIZER, reg_cnn_cfg.L2_REG)
-                for _ in range(cls_cnn_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
+            self.classifier = None
 
-                # VisionTransformer(reg_vit_cfg.NUM_PATCHES, reg_vit_cfg.PATCH_SIZE, reg_vit_cfg.D_MODEL, reg_vit_cfg.NUM_LAYERS, reg_vit_cfg.NUM_HEADS, reg_vit_cfg.MLP_DIM, reg_vit_cfg.NUM_CLASSES)
-                # for _ in range(cls_vit_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
-            ]
+        # if initialize_submodels:
+        self.specialized_regressors = [
+            None
+            # ConvolutionalNeuralNetwork(cls_cnn_cfg.IMAGE_SIZE, reg_cnn_cfg.UNFROZEN_BASE_LAYERS, reg_cnn_cfg.NUM_LAYERS, reg_cnn_cfg.DENSE_LAYERS, reg_cnn_cfg.NUM_CLASSES, reg_cnn_cfg.FINAL_ACTIVATION, reg_cnn_cfg.KERNEL_INITIALIZER, reg_cnn_cfg.L2_REG)
+            for _ in range(cls_cnn_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
+
+            # VisionTransformer(reg_vit_cfg.NUM_PATCHES, reg_vit_cfg.PATCH_SIZE, reg_vit_cfg.D_MODEL, reg_vit_cfg.NUM_LAYERS, reg_vit_cfg.NUM_HEADS, reg_vit_cfg.MLP_DIM, reg_vit_cfg.NUM_CLASSES)
+            # for _ in range(cls_vit_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
+        ]
+
+    def save(self, save_path):
+        overrides = {"initialize_submodels": False}
+
+        super().save(save_path, **overrides)
+
+    @classmethod
+    def load_incomplete(cls, save_path):  # could allow this to take overrides too
+        overrides = {"initialize_submodels": False}
+
+        return cls.load(save_path, **overrides)
+
+    @classmethod
+    def load_complete(cls, save_path):
+        model = cls.load_incomplete(save_path)
+
+        classifier_path = os.path.join(save_path, "classifier", "classifier.keras")
+        classifier = ConvolutionalNeuralNetwork.load(classifier_path)
+        model.classifier = classifier
+
+        for i, country_name in enumerate(COUNTRIES):
+            regressor_path = os.path.join(save_path, country_name, f"{country_name}.keras")
+            if not os.path.exists(regressor_path):
+                continue
+
+            regressor = ConvolutionalNeuralNetwork.load(regressor_path)
+            model.specialized_regressors[i] = regressor
+
+        return model
 
     def base_process(self, inputs):  # is pretty much just first part of call
         x = preprocess_input(inputs)
@@ -120,11 +147,10 @@ class FullModel(SubclassedModel):
 
     #     return cls(classifier=classifier, specialized_regressors=specialized_regressors, **config)
 
-    @staticmethod
-    def create_classifier():
+    def create_classifier(self):
         regressor = ConvolutionalNeuralNetwork(
-            model_cfg.IMAGE_SIZE,
-            model_cfg.UNFROZEN_BASE_LAYERS,
+            self.used_input_shape,
+            self.num_unfrozen_base_layers,
             cls_cnn_cfg.NUM_LAYERS,
             cls_cnn_cfg.DENSE_LAYERS,
             cls_cnn_cfg.NUM_CLASSES,
@@ -135,11 +161,10 @@ class FullModel(SubclassedModel):
 
         return regressor
 
-    @staticmethod
-    def create_regressor():
+    def create_regressor(self):
         regressor = ConvolutionalNeuralNetwork(
-            model_cfg.IMAGE_SIZE,
-            model_cfg.UNFROZEN_BASE_LAYERS,
+            self.used_input_shape,
+            self.num_unfrozen_base_layers,
             reg_cnn_cfg.NUM_LAYERS,
             reg_cnn_cfg.DENSE_LAYERS,
             reg_cnn_cfg.NUM_CLASSES,
@@ -157,36 +182,8 @@ class FullModel(SubclassedModel):
     #     self.specialized_regressors[index] = regressor
 
     @staticmethod
-    def load_self(save_path, model_name, *args, **kwargs):  # don't need to save base layers or classifier really...
-        path = os.path.join(save_path, model_name)
-        if os.path.exists(path):
-            return FullModel.load(path, *args, **kwargs)
-
-        return None
-
-    @staticmethod
-    def load_full(save_path, model_name):  # TODO: Doesn't work... classifier doesn't get used
-        full_model = FullModel.load_self(save_path, model_name)
-        if full_model is None:
-            return None
-
-        classifier_path = os.path.join(save_path, "classifier", model_name)
-        classifier = ConvolutionalNeuralNetwork.load(classifier_path)
-        full_model.classifier = classifier
-
-        for i, country_name in enumerate(COUNTRIES):
-            model_path = os.path.join(save_path, country_name, model_name)
-            if not os.path.exists(model_path):
-                continue
-
-            model = ConvolutionalNeuralNetwork.load(model_path)
-            full_model.specialized_regressors[i] = model
-
-        return full_model
-
-    @staticmethod
-    def load_submodel(save_path, country_name, model_name, *args, **kwargs):
-        path = os.path.join(save_path, country_name, model_name)
+    def load_submodel(save_path, name, *args, **kwargs):
+        path = os.path.join(save_path, name, f"{name}.keras")
         if os.path.exists(path):
             return ConvolutionalNeuralNetwork.load(path, *args, **kwargs)
 

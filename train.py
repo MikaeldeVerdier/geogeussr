@@ -1,4 +1,5 @@
 import configs.training_config as train
+import configs.full_model_config as model_cfg
 from trainer import Trainer
 from models.full_model import FullModel
 
@@ -10,15 +11,15 @@ if __name__ == "__main__":
 
     # Create a full model (always needed)
     if not load:
-        model = FullModel()  # Use a new full model
+        model = FullModel(model_cfg.IMAGE_SIZE, model_cfg.UNFROZEN_BASE_LAYERS)  # Use a new full model
     else:
-        model = FullModel.load_self(train.SAVE_PATH, train.MODEL_NAME)  # Load a full model
+        model = FullModel.load_incomplete(train.SAVE_PATH)  # Load a full (incomplete) model
 
     # Train the full model
     # """
     trainer.train_fullmodel(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, load)
 
-    model.save(train.MODEL_PATH)  # double-saves classifier...
+    model.save(train.SAVE_PATH)  # double-saves classifier...
     # """
 
     """
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     if not load:
         classifier = FullModel.create_classifier()  # Use a new classifier
     else:
-        classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier", train.MODEL_NAME)  # Load a classifier
+        classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
     trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     """
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     if not load:
         regressor = FullModel.create_regressor()  # Use a new regressor
     else:
-        regressor = FullModel.load_submodel(train.SAVE_PATH, country_name, train.MODEL_NAME)  # Load a regressor
+        regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # Load a regressor
 
     trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     """

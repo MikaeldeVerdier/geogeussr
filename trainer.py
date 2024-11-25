@@ -51,8 +51,8 @@ class Trainer:
     #     return csv_logger_callback
 
     def create_checkpoint_callback(self, load, save_freq, name):
-        history_filepath = os.path.join(train.SAVE_PATH, name, "training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
-        checkpoint_filepath = os.path.join(train.SAVE_PATH, name, train.MODEL_NAME)  # "{epoch}" ?
+        history_filepath = os.path.join(train.SAVE_PATH, name, f"{name}_training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
+        checkpoint_filepath = os.path.join(train.SAVE_PATH, name, f"{name}.keras")  # "{epoch}" ?
         model_checkpoint_callback = ModelCheckpointWithHistory(
             load_initial=load,
             history_filepath=history_filepath,
@@ -125,7 +125,11 @@ class Trainer:
             self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
         # Classifier training (not trained seperately)
-        train_submodel_shortcut(model.classifier, "categorical_crossentropy", None, 0, iteration_amount, "classifier")
+        if load:
+            classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")
+        if not load or classifier is None:
+            classifier = model.create_classifier()
+        train_submodel_shortcut(classifier, "categorical_crossentropy", None, 0, iteration_amount, "classifier")
 
         # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         # model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
@@ -155,9 +159,9 @@ class Trainer:
                 continue
 
             if load:
-                regressor = FullModel.load_submodel(train.SAVE_PATH, country_name, train.MODEL_NAME)  # don't like having to import FullModel for this
+                regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # don't like having to import FullModel for this
             if not load or regressor is None:
-                regressor = FullModel.create_regressor()
+                regressor = model.create_regressor()
 
             train_submodel_shortcut(regressor, RootMeanSquareError(), country_name, 1, country_iteration_amount, country_name)
 

@@ -1,3 +1,6 @@
+import os
+import json
+
 from keras.models import Model, load_model
 
 class SubclassedModel(Model):
@@ -5,7 +8,7 @@ class SubclassedModel(Model):
         super().__init__()
 
         self.config = kwargs
-    
+
     def get_functional_model(self):
         inp = self.layers[0].input  # only allows for saving after it's been built, but that should be okay for now.
         out = self(inp)
@@ -31,3 +34,34 @@ class SubclassedModel(Model):
     @classmethod
     def from_config(cls, config):
         return cls(**config)
+
+
+class SubclassedModelJSON(Model):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+        self.config = {
+            "args": args,
+            "kwargs": kwargs
+        }
+
+    def save(self, save_path, **overrides):
+        used_config = self.config
+        used_config["kwargs"] |= overrides
+
+        model_config_path = os.path.join(save_path, "model_config.json")
+        with open(model_config_path, "w") as f:
+            json.dump(used_config, f)
+    
+    @classmethod
+    def load(cls, save_path, **overrides):
+        model_config_path = os.path.join(save_path, "model_config.json")
+        with open(model_config_path, "r") as f:
+            config = json.load(f)
+
+        args = config["args"]
+        kwargs = config["kwargs"]
+
+        kwargs |= overrides
+
+        return cls(*args, **kwargs)

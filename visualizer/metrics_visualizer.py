@@ -22,7 +22,7 @@ class MetricsVisualizer:
             with open(metrics_path, "r") as json_file:
                 self.metrics[submodel_dir] = json.load(json_file)
 
-    def plot_metrics(self, submodels=None, seperate=False):
+    def plot_metrics(self, submodels=None, seperate=False, scoped=False, trendline=False):
         if submodels is not None:
             chosen_submodels = {submodel: self.metrics[submodel] for submodel in submodels}  # doesn't allow duplicates (creates duplicate images with different inputs)
         else:
@@ -56,8 +56,28 @@ class MetricsVisualizer:
                 if i == 0:
                     ax.set_title(submodels)
 
+            if scoped:
+                vals = [v for val in submodel_history.values() for v in val]
+                if len(vals) >= 2:
+                    median = np.median(vals)
+                    median_variance = np.median(np.abs(np.diff(vals)))
+                    min_val = np.min(vals)
+
+                    ax.set_ylim(max(min_val - median_variance, 0), median + median_variance)
+                    # ax.set_xlim(len(list(submodel_history.values())[0]) - 100, len(list(submodel_history.values())[0]))
+
             for metric_key, metric_val in submodel_history.items():
                 ax.plot(metric_val, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
+
+                if trendline:
+                    if len(vals) >= 4:  # // 2 > 2
+                        cut_off = int(len(metric_val) // 2)
+                        x = list(range(cut_off, len(metric_val)))
+                        y = metric_val[cut_off:]
+
+                        fit = np.polyfit(x, y, 1)
+                        poly = np.poly1d(fit)
+                        ax.plot(x, poly(x), label=f"Trendline: {metric_key}{f' ({submodel_name})' if not seperate else ''}")
 
             ax.set_xscale("linear")
             ax.legend()

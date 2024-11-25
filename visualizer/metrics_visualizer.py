@@ -70,7 +70,7 @@ class MetricsVisualizer:
                 ax.plot(metric_val, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
 
                 if trendline:
-                    if len(vals) >= 4:  # // 2 > 2
+                    if len(metric_val) >= 4:  # // 2 > 2
                         cut_off = int(len(metric_val) // 2)
                         x = list(range(cut_off, len(metric_val)))
                         y = metric_val[cut_off:]

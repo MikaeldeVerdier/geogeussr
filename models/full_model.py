@@ -157,17 +157,37 @@ class FullModel(SubclassedModel):
     #     self.specialized_regressors[index] = regressor
 
     @staticmethod
-    def load_self(save_path, model_name):
+    def load_self(save_path, model_name, *args, **kwargs):  # don't need to save base layers or classifier really...
         path = os.path.join(save_path, model_name)
         if os.path.exists(path):
-            return FullModel.load(path)
+            return FullModel.load(path, *args, **kwargs)
 
         return None
 
     @staticmethod
-    def load_submodel(save_path, country_name, model_name):
+    def load_full(save_path, model_name):  # TODO: Doesn't work... classifier doesn't get used
+        full_model = FullModel.load_self(save_path, model_name)
+        if full_model is None:
+            return None
+
+        classifier_path = os.path.join(save_path, "classifier", model_name)
+        classifier = ConvolutionalNeuralNetwork.load(classifier_path)
+        full_model.classifier = classifier
+
+        for i, country_name in enumerate(COUNTRIES):
+            model_path = os.path.join(save_path, country_name, model_name)
+            if not os.path.exists(model_path):
+                continue
+
+            model = ConvolutionalNeuralNetwork.load(model_path)
+            full_model.specialized_regressors[i] = model
+
+        return full_model
+
+    @staticmethod
+    def load_submodel(save_path, country_name, model_name, *args, **kwargs):
         path = os.path.join(save_path, country_name, model_name)
         if os.path.exists(path):
-            return ConvolutionalNeuralNetwork.load(path)
+            return ConvolutionalNeuralNetwork.load(path, *args, **kwargs)
 
         return None

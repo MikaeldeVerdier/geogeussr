@@ -53,7 +53,10 @@ class DatasetHandler:
 
         encoded_coords = np.array([local_x / 1000, local_y / 1000])  # in km now  # to decode: * 1000
 
-        return encoded_coords
+        if index == 1:
+            return encoded_coords
+
+        return one_hot_country, encoded_coords
 
     def generate_batch(self, input_shape, preprocess_function, country_name, y_index, batch_size):
         if country_name is not None:
@@ -74,12 +77,18 @@ class DatasetHandler:
                 # y_1_batch.append(y_1)
                 y_batch.append(y)
 
-            np_return = (np.array(x_batch), np.array(y_batch))
+            if y_index == 0 or y_index == 1:
+                np_return = (np.array(x_batch), np.array(y_batch))
+            else:
+                outputs = list(zip(*y_batch))
+                np_return = (np.array(x_batch), (np.array(outputs[0]), np.array(outputs[1])))
 
             yield np_return
 
-    def decode_predictions(self, class_probs, regressed_values):
+    def decode_predictions(self, class_probs, regressed_values, ret_country=False, ret_local_coords=False):
         coords = []
+        countries = []
+        local_coords = []
         for batch_probs, batch_vals in zip(class_probs, regressed_values):
             country_index = np.argmax(batch_probs, axis=-1)
 
@@ -92,7 +101,18 @@ class DatasetHandler:
             lng, lat = proj(local_x, local_y, inverse=True)
 
             coords.append([lat, lng])
+            if ret_country:
+                countries.append(COUNTRIES[country_index])
+            if ret_local_coords:
+                local_coords.append([local_x, local_y])
 
-        np_coords = np.array(coords)
+        if not ret_country or ret_local_coords:
+            return np.array(coords)
 
-        return np_coords
+        ret_vals = [np.array(coords)]
+        if ret_country:
+            ret_vals.append(countries)
+        if ret_local_coords:
+            ret_vals.append(local_coords)
+
+        return ret_vals

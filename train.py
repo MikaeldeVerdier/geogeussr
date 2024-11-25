@@ -3,8 +3,6 @@ from trainer import Trainer
 from models.full_model import FullModel
 
 if __name__ == "__main__":
-    # model = FullModel.load(train.MODEL_PATH)
-
     load = False
 
     # Create a trainer (always needed)

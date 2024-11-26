@@ -23,8 +23,10 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
 
     def append_to_history(self, old_logs, logs, is_test=False):
         appended_logs = {
-            f"val_{key}" if is_test else key:
+            f"val_{key}"
+            if is_test else key:
             old_logs.get(f"val_{key}" if is_test else key, []) + (value if isinstance(value, list) else [value])  # ugly
+
             for key, value in logs.items()
         }
         new_logs = old_logs | appended_logs

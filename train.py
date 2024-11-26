@@ -25,7 +25,7 @@ if __name__ == "__main__":
     """
     # Train classifier only
     if not load:
-        classifier = FullModel.create_classifier()  # Use a new classifier
+        classifier = model.create_classifier()  # Use a new classifier
     else:
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     """
     country_name = "SWE"
     if not load:
-        regressor = FullModel.create_regressor()  # Use a new regressor
+        regressor = model.create_regressor()  # Use a new regressor
     else:
         regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # Load a regressor
 

@@ -81,7 +81,7 @@ class MetricsVisualizer:
 
                         fit = np.polyfit(x, y, 1)
                         poly = np.poly1d(fit)
-                        ax.plot(x, poly(x), label=f"Trendline: {metric_key}{f' ({submodel_name})' if not seperate else ''}")
+                        ax.plot(x, poly(x), label=f"Trendline: {metric_key}{f' ({submodel_name})' if not seperate else ''}", zorder=3)
 
             ax.set_xscale("linear")
             ax.legend()

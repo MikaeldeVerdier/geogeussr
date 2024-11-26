@@ -130,7 +130,7 @@ class Trainer:
             classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")
         if not load or classifier is None:
             classifier = model.create_classifier()
-        train_submodel_shortcut(classifier, "categorical_crossentropy", None, 0, iteration_amount, "classifier")
+        train_submodel_shortcut(classifier, FocalLoss(), None, 0, iteration_amount, "classifier")
 
         # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         # model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")

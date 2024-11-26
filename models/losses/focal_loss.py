@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 class FocalLoss(tf.keras.losses.Loss):
-    def __init__(self, name="focal_loss", alpha=0.25, gamma=2, epsilon=1e-10, **kwargs):
+    def __init__(self, name="focal_loss", alpha=0.25, gamma=2, epsilon=1e-7, **kwargs):
         super(FocalLoss, self).__init__(name=name, **kwargs)
 
         self.alpha = alpha
@@ -13,6 +13,6 @@ class FocalLoss(tf.keras.losses.Loss):
         cross_entropy = -y_true * tf.math.log(y_pred)
         weight = self.alpha * tf.pow(1 - y_pred, self.gamma)
 
-        total_loss = tf.reduce_sum(cross_entropy * weight)
+        total_loss = tf.reduce_sum(cross_entropy * weight, axis=-1)
 
         return total_loss

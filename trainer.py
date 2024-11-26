@@ -5,6 +5,7 @@ from keras.optimizers.schedules import ExponentialDecay
 
 import configs.training_config as train
 import configs.adam_config as adam
+from models.losses.focal_loss import FocalLoss
 from models.losses.root_mean_squared_error import RootMeanSquareError
 from models.full_model import FullModel
 from dataset_handler import DatasetHandler
@@ -101,7 +102,7 @@ class Trainer:
         )
 
     def train_classifier(self, classifier, load, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
-        loss = "categorical_crossentropy"
+        loss = FocalLoss()
         y_index = 0
         country_name = None
         name = "classifier"

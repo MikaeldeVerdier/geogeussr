@@ -25,7 +25,7 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
         appended_logs = {
             f"val_{key}"
             if is_test else key:
-            old_logs.get(f"val_{key}" if is_test else key, []) + (value if isinstance(value, list) else [value])  # ugly
+            old_logs.get(f"val_{key}" if is_test else key, []) + (value if isinstance(value, list) else [float(value)])  # ugly
 
             for key, value in logs.items()
         }

@@ -66,7 +66,7 @@ class FullModel(SubclassedModelJSON):
         model = cls.load_incomplete(save_path)
 
         classifier_path = os.path.join(save_path, "classifier", "classifier.keras")
-        classifier = ConvolutionalNeuralNetwork.load(classifier_path)
+        classifier = ConvolutionalNeuralNetwork.load(classifier_path)  # , custom_objects={"ConvolutionalNeuralNetwork": ConvolutionalNeuralNetwork}  # UNCOMMENT FOR COMPATIBILITY
         model.classifier = classifier
 
         for i, country_name in enumerate(COUNTRIES):
@@ -74,7 +74,7 @@ class FullModel(SubclassedModelJSON):
             if not os.path.exists(regressor_path):
                 continue
 
-            regressor = ConvolutionalNeuralNetwork.load(regressor_path)
+            regressor = ConvolutionalNeuralNetwork.load(regressor_path)  # , custom_objects={"ConvolutionalNeuralNetwork": ConvolutionalNeuralNetwork}  # UNCOMMENT FOR COMPATIBILITY
             model.specialized_regressors[i] = regressor
 
         return model

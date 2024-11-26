@@ -2,6 +2,7 @@ import os
 import json
 
 from keras.models import Model, load_model
+# from keras.layers import Input  # UNCOMMENT FOR COMPATIBILITY
 
 class SubclassedModel(Model):
     def __init__(self, **kwargs):
@@ -9,8 +10,8 @@ class SubclassedModel(Model):
 
         self.config = kwargs
 
-    def get_functional_model(self):
-        inp = self.layers[0].input  # only allows for saving after it's been built, but that should be okay for now.
+    def get_functional_model(self):  # only allows for saving after it's been built, but that should be okay for now.
+        inp = self.layers[0].input  # Input(shape=self.layers[0].input.shape[1:])  # UNCOMMENT FOR COMPATIBILITY
         out = self(inp)
         func_model = Model(inputs=inp, outputs=out)
 

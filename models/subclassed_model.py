@@ -5,7 +5,7 @@ from keras.models import Model, load_model
 # from keras.layers import Input  # UNCOMMENT FOR COMPATIBILITY
 
 class SubclassedModel(Model):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # why only kwargs?
         super().__init__()
 
         self.config = kwargs

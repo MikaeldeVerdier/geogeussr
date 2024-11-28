@@ -50,7 +50,7 @@ class FullModel(SubclassedModelJSON):
             # for _ in range(cls_vit_cfg.NUM_CLASSES)  # self.classifier.output.shape[1]
         ]
 
-    def save(self, save_path):
+    def save(self, save_path):  # could rename to save_incomplete but then save will still be available and save_complete should probably not be allowed because then two different load_incomplete methods would be needed
         overrides = {"initialize_submodels": False}
 
         super().save(save_path, **overrides)

@@ -3,6 +3,8 @@ import numpy as np
 import random
 import cv2
 import pyproj
+import tensorflow as tf
+from tensorflow.data import Dataset
 
 from files import load_annotations
 from countries import *
@@ -58,37 +60,53 @@ class DatasetHandler:
 
         return one_hot_country, encoded_coords
 
-    def generate_batch(self, input_shape, preprocess_function, country_name, y_index, batch_size):
-        if country_name is not None:
-            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
-        else:
-            country_annotations = self.annotations
+    def create_generator(self, input_shape, preprocess_function, country_name, y_index, batch_size):
+        def generate_batch():
+            if country_name is not None:
+                country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
+            else:
+                country_annotations = self.annotations
 
-        while True:
-            chosen_annotations = random.sample(country_annotations, min(batch_size, len(country_annotations)))
+            while True:
+                chosen_annotations = random.sample(country_annotations, min(batch_size, len(country_annotations)))
 
-            x_batch = []
-            y_batch = []
-            for annotation in chosen_annotations:
-                x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
-                x_batch.append(x)
+                x_batch = []
+                y_batch = []
+                for annotation in chosen_annotations:
+                    x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
+                    x_batch.append(x)
+
+                    if y_index != 0 and y_index != 0:
+                        y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["country"]))
+
+                        continue
+
+                    y = self.encode_location(annotation["location"], y_index)
+                    # y_1_batch.append(y_1)
+                    y_batch.append(y)
 
                 if y_index != 0 and y_index != 0:
-                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["country"]))
+                    outputs = list(zip(*y_batch))
+                    np_return = (np.array(x_batch), (np.array(outputs[0]), np.array(outputs[1])))
+                else:
+                    np_return = (np.array(x_batch), np.array(y_batch))
 
-                    continue
+                yield np_return
 
-                y = self.encode_location(annotation["location"], y_index)
-                # y_1_batch.append(y_1)
-                y_batch.append(y)
+        return generate_batch
 
-            if y_index != 0 and y_index != 0:
-                outputs = list(zip(*y_batch))
-                np_return = (np.array(x_batch), (np.array(outputs[0]), np.array(outputs[1])))
-            else:
-                np_return = (np.array(x_batch), np.array(y_batch))
+    def create_dataset(self, input_shape, num_classes, image_size, preprocess_function, country_name, y_index, batch_size):
+        generator = self.create_generator(image_size, preprocess_function, country_name, y_index, batch_size)
 
-            yield np_return
+        dataset = Dataset.from_generator(
+            generator,
+            output_signature=(
+                tf.TensorSpec(shape=(batch_size,) + input_shape, dtype=tf.float32),
+                tf.TensorSpec(shape=(batch_size, num_classes), dtype=tf.int32)
+            )
+        )
+
+        return dataset
 
     def decode_predictions(self, class_probs, regressed_values, ret_country=False, ret_local_coords=False):
         coords = []

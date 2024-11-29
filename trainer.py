@@ -72,37 +72,39 @@ class Trainer:
 
         # return start_iteration
 
-    def create_generator_split(self, input_shape, preprocess_func, country_name, y_index, split):
+    def create_dataset_split(self, input_shape, num_classes, image_size, preprocess_func, country_name, y_index, split):
         used_batch_size = int(round(self.dataset_handler.batch_size * split))
         if used_batch_size == 0:
             return None
 
-        used_generator = self.dataset_handler.generate_batch(input_shape, preprocess_func, country_name, y_index, used_batch_size)
+        dataset = self.dataset_handler.create_dataset(input_shape, num_classes, image_size, preprocess_func, country_name, y_index, used_batch_size)
 
-        return used_generator
+        return dataset
 
-    def train_submodel(self, submodel, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
+    def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
         optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         submodel.compile(optimizer=optimizer, loss=loss)
 
         checkpoint_callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
 
-        train_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, (1 - train.VALIDATION_SPLIT))
-        validation_generator = self.create_generator_split(input_shape, preprocess_function, country_name, y_index, train.VALIDATION_SPLIT)
+        output_shape = submodel.layers[0].input.shape[1:]
+        num_classes = submodel.config["num_classes"]
+        train_dataset = self.create_dataset_split(output_shape, num_classes, image_size, preprocess_function, country_name, y_index, (1 - train.VALIDATION_SPLIT))
+        validation_dataset = self.create_dataset_split(output_shape, num_classes, image_size, preprocess_function, country_name, y_index, train.VALIDATION_SPLIT)
 
         print(f"Training {name} for {iteration_amount} iterations")
         submodel.fit(
-            train_generator,
+            train_dataset,
             epochs=iteration_amount,
             class_weight=class_weights,
             callbacks=[checkpoint_callback],
-            validation_data=validation_generator,
+            validation_data=validation_dataset,
             initial_epoch=start_iteration,
             validation_steps=1,
             steps_per_epoch=1
         )
 
-    def train_classifier(self, classifier, load, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
+    def train_classifier(self, classifier, load, image_size, preprocess_function, start_iteration, iteration_amount, save_ratio):
         loss = FocalLoss()
 
         num_classes = classifier.config["num_classes"]  # don't love accessing config, should maybe be private
@@ -110,26 +112,27 @@ class Trainer:
             self.dataset_handler.unique_countries.tolist().index(COUNTRIES[index])
         ]  # don't like lambdas
         ratio = len(self.dataset_handler.annotations) / num_classes
-        class_weights = [
+        class_weights = {
+            i:
             ratio / anno_count_for_i(i)
             if COUNTRIES[i] in self.dataset_handler.unique_countries else
             0
             for i in range(num_classes)
-        ]
+        }
         country_name = None
         y_index = 0
         name = "classifier"
 
-        self.train_submodel(classifier, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
-    def train_regressor(self, regressor, load, input_shape, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
+    def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
         class_weights = {}
         country_name = country_name
         y_index = 1
         name = country_name
 
-        self.train_submodel(regressor, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(regressor, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()

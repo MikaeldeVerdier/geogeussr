@@ -6,5 +6,5 @@ if __name__ == "__main__":
     # Plot metrics (from save_path)
     # """
     viz = MetricsVisualizer(SAVE_PATH)
-    viz.plot_metrics(seperate=True, scoped=True, trendline=True, down_sampled_to=100)
+    viz.plot_metrics(seperate=True, scoped=True, trendline=True, down_sampled_to=1000)
     # """

@@ -22,7 +22,7 @@ class MetricsVisualizer:
             with open(metrics_path, "r") as json_file:
                 self.metrics[submodel_dir] = json.load(json_file)
 
-    def plot_metrics(self, submodels=None, seperate=False, scoped=False, trendline=False):
+    def plot_metrics(self, submodels=None, seperate=False, scoped=False, trendline=False, down_sampled_to=None):
         if submodels is not None:
             chosen_submodels = {submodel: self.metrics[submodel] for submodel in submodels}  # doesn't allow duplicates (creates duplicate images with different inputs)
         else:
@@ -71,13 +71,23 @@ class MetricsVisualizer:
                     # ax.set_xlim(len(list(submodel_history.values())[0]) - 100, len(list(submodel_history.values())[0]))
 
             for metric_key, metric_val in submodel_history.items():
-                ax.plot(metric_val, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
+                metric_val = np.random.rand(1000)
+                if down_sampled_to != None and len(metric_val) > down_sampled_to:
+                    block_size = len(metric_val) // down_sampled_to
+                    used_metric = [
+                        np.mean(metric_val[block_size * i: block_size * (i + 1)])
+                        for i in range(down_sampled_to)
+                    ]
+                else:
+                    used_metric = metric_val
+
+                ax.plot(used_metric, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
 
                 if trendline:
-                    if len(metric_val) >= 4:  # // 2 > 2
-                        cut_off = int(len(metric_val) // 2)
-                        x = list(range(cut_off, len(metric_val)))
-                        y = metric_val[cut_off:]
+                    if len(used_metric) >= 4:  # // 2 > 2
+                        cut_off = int(len(used_metric) // 2)
+                        x = list(range(cut_off, len(used_metric)))
+                        y = used_metric[cut_off:]
 
                         fit = np.polyfit(x, y, 1)
                         poly = np.poly1d(fit)
@@ -90,9 +100,9 @@ class MetricsVisualizer:
                 for ax in axs[row_index, col_index + 1:]:  # can never be more than n_cols - 1 wrong
                     ax.remove()
 
-        title = ", ".join([text for text, val in [("seperate", seperate), ("scoped", scoped), ("trendline", trendline)] if val])
-        fig.suptitle(f"Metrics for {submodels if submodels is not None else 'all'}{f' ({title})' if title != '' else ''}")
+        title = ", ".join([text for text, val in [("seperate", seperate), ("scoped", scoped), ("trendline", trendline), (f"down_sampled to {down_sampled_to}", down_sampled_to != None)] if val])
+        fig.suptitle(f"Metrics for {submodels if submodels is not None else 'all'}{f' ({title})' if title != '' else ''}", wrap=True)
         fig.tight_layout()
 
-        metrics_path = os.path.join(self.save_path, f"metrics_{submodels}su_{seperate}se_{scoped}sc_{trendline}t.png")
+        metrics_path = os.path.join(self.save_path, f"metrics_{submodels}su_{seperate}se_{scoped}sc_{trendline}t_{down_sampled_to}d.png")
         plt.savefig(metrics_path)

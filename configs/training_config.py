@@ -1,4 +1,4 @@
-DATASET_PATH = "datasets/dataset"
+DATASET_PATH = "datasets/dataset10"
 AMOUNT_ITERATIONS = 10
 BATCH_SIZE = 8
 VALIDATION_SPLIT = 0.2

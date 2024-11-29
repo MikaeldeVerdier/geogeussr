@@ -81,7 +81,7 @@ class Trainer:
 
         return used_generator
 
-    def train_submodel(self, submodel, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
+    def train_submodel(self, submodel, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
         optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         submodel.compile(optimizer=optimizer, loss=loss)
 
@@ -94,6 +94,7 @@ class Trainer:
         submodel.fit(
             train_generator,
             epochs=iteration_amount,
+            class_weight=class_weights,
             callbacks=[checkpoint_callback],
             validation_data=validation_generator,
             initial_epoch=start_iteration,
@@ -103,34 +104,51 @@ class Trainer:
 
     def train_classifier(self, classifier, load, input_shape, preprocess_function, start_iteration, iteration_amount, save_ratio):
         loss = FocalLoss()
-        y_index = 0
+
+        num_classes = classifier.config["num_classes"]  # don't love accessing config, should maybe be private
+        anno_count_for_i = lambda index: self.dataset_handler.annotation_counts[
+            self.dataset_handler.unique_countries.tolist().index(COUNTRIES[index])
+        ]  # don't like lambdas
+        ratio = len(self.dataset_handler.annotations) / num_classes
+        class_weights = [
+            ratio / anno_count_for_i(i)
+            if COUNTRIES[i] in self.dataset_handler.unique_countries else
+            0
+            for i in range(num_classes)
+        ]
         country_name = None
+        y_index = 0
         name = "classifier"
 
-        self.train_submodel(classifier, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(classifier, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
     def train_regressor(self, regressor, load, input_shape, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
-        y_index = 1
+        class_weights = {}
         country_name = country_name
+        y_index = 1
         name = country_name
 
-        self.train_submodel(regressor, load, input_shape, preprocess_function, loss, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(regressor, load, input_shape, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()
 
         start_iteration = 0  # self.get_start_iteration()
 
-        def train_submodel_shortcut(submodel, loss, used_country_name, y_index, used_iteration_amount, name):
-            self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
+        def train_submodel_shortcut(submodel, y_index, used_iteration_amount, used_country_name=None):
+            if y_index == 0:
+                self.train_classifier(submodel, load, model.used_input_shape, model.base_process, start_iteration, used_iteration_amount, save_ratio)
+            elif y_index == 1:
+                self.train_regressor(submodel, load, model.used_input_shape, model.base_process, used_country_name, start_iteration, used_iteration_amount, save_ratio)
+            # self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
         # Classifier training (not trained seperately)
         if load:
             classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")
         if not load or classifier is None:
             classifier = model.create_classifier()
-        train_submodel_shortcut(classifier, FocalLoss(), None, 0, iteration_amount, "classifier")
+        train_submodel_shortcut(classifier, 0, iteration_amount)
 
         # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
         # model.classifier.compile(optimizer=optimizer, loss="categorical_crossentropy")
@@ -164,7 +182,7 @@ class Trainer:
             if not load or regressor is None:
                 regressor = model.create_regressor()
 
-            train_submodel_shortcut(regressor, RootMeanSquareError(), country_name, 1, country_iteration_amount, country_name)
+            train_submodel_shortcut(regressor, 1, country_iteration_amount, used_country_name=country_name)
 
             # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
             # regressor.compile(optimizer=optimizer, loss=[RootMeanSquareError()])

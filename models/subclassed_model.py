@@ -11,7 +11,8 @@ class SubclassedModel(Model):
         self.config = kwargs
 
     def get_functional_model(self):  # only allows for saving after it's been built, but that should be okay for now.
-        inp = self.layers[0].input  # Input(shape=self.layers[0].input.shape[1:])  # UNCOMMENT FOR COMPATIBILITY
+        inp = self.layers[0].input  # COMMENT FOR COMPATIBILITY
+        # inp = Input(shape=self.layers[0].input.shape[1:])  # UNCOMMENT FOR COMPATIBILITY
         out = self(inp)
         func_model = Model(inputs=inp, outputs=out)
 

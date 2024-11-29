@@ -102,7 +102,7 @@ class DatasetHandler:
             generator,
             output_signature=(
                 tf.TensorSpec(shape=(batch_size,) + input_shape, dtype=tf.float32),
-                tf.TensorSpec(shape=(batch_size, num_classes), dtype=tf.int32)
+                tf.TensorSpec(shape=(batch_size, num_classes), dtype=tf.float32)
             )
         )
 

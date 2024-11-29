@@ -1,6 +1,8 @@
 from countries import *
 
 NUM_LAYERS = 10
+NUM_FILTERS = 512
+KERNEL_SIZE = (3, 3)
 DENSE_LAYERS = [1024, 512]
 NUM_CLASSES = len(COUNTRIES)
 FINAL_ACTIVATION = "softmax"

@@ -74,7 +74,7 @@ class DatasetHandler:
                 x_batch.append(x)
 
                 if y_index != 0 and y_index != 0:
-                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lat"]], annotation["location"]["country"]))
+                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["country"]))
 
                     continue
 

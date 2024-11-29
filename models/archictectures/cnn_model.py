@@ -5,7 +5,7 @@ from keras.regularizers import L2
 from models.subclassed_model import SubclassedModel
 
 class ConvolutionalNeuralNetwork(SubclassedModel):  # don't think this needs to be SubclassedModel...
-    def __init__(self, input_shape, unfrozen_base_layers, num_layers, dense_layers, num_classes, final_activation, kernel_initializer, l2_reg):
+    def __init__(self, input_shape, unfrozen_base_layers, num_layers, num_filters, kernel_size, dense_layers, num_classes, final_activation, kernel_initializer, l2_reg):
         super().__init__(input_shape=input_shape, unfrozen_base_layers=unfrozen_base_layers, num_layers=num_layers, dense_layers=dense_layers, num_classes=num_classes,final_activation=final_activation, kernel_initializer=kernel_initializer, l2_reg=l2_reg)
 
         base_network = VGG16(include_top=False, weights="imagenet", input_shape=input_shape)
@@ -14,7 +14,7 @@ class ConvolutionalNeuralNetwork(SubclassedModel):  # don't think this needs to 
         for layer in self.base_layers:
             layer.trainable = True
 
-        self.convolutional_layers = [Conv2D(filters=512, kernel_size=(3, 3), padding="same", activation="relu", kernel_initializer=kernel_initializer, kernel_regularizer=L2(l2_reg)) for _ in range(num_layers)]
+        self.convolutional_layers = [Conv2D(filters=num_filters, kernel_size=kernel_size, padding="same", activation="relu", kernel_initializer=kernel_initializer, kernel_regularizer=L2(l2_reg)) for _ in range(num_layers)]
         self.pool = GlobalAveragePooling2D()
         self.dense_head = [Dense(num_neuron, activation="relu") for num_neuron in dense_layers] + [Dense(num_classes, activation=final_activation)]
 

@@ -71,7 +71,6 @@ class MetricsVisualizer:
                     # ax.set_xlim(len(list(submodel_history.values())[0]) - 100, len(list(submodel_history.values())[0]))
 
             for metric_key, metric_val in submodel_history.items():
-                metric_val = np.random.rand(1000)
                 if down_sampled_to != None and len(metric_val) > down_sampled_to:
                     block_size = len(metric_val) // down_sampled_to
                     used_metric = [

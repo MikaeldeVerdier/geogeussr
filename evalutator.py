@@ -5,7 +5,7 @@ class Evaluator:
         self.dataset_handler = DatasetHandler(dataset_path, 1)
 
     def evaluate(self, model, iteration_amount):  # n_iterations?
-        generator = self.dataset_handler.generate_batch(model.used_input_shape, model.preprocess_func, None, None, 1)
+        generator = self.dataset_handler.create_generator(model.used_input_shape, model.preprocess_func, None, None, 1)
         for _ in range(iteration_amount):
             batch_input, (coord_gt, country_gt) = next(generator)
 

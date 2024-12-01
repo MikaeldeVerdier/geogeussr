@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # """
     trainer.train_fullmodel(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, load)
 
-    model.save(train.SAVE_PATH)  # double-saves classifier...
+    model.save(train.SAVE_PATH)
     # """
 
     """
@@ -30,6 +30,7 @@ if __name__ == "__main__":
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
     trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    # model.save(train.SAVE_PATH)
     """
 
     # Train a regressor only
@@ -41,4 +42,5 @@ if __name__ == "__main__":
         regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # Load a regressor
 
     trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    # model.save(train.SAVE_PATH)
     """

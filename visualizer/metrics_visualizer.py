@@ -72,16 +72,15 @@ class MetricsVisualizer:
 
             for metric_key, metric_val in submodel_history.items():
                 if down_sampled_to != None and len(metric_val) > down_sampled_to:
-                    indices = np.linspace(0, len(metric_val), down_sampled_to + 1, dtype=int)
+                    indices = np.linspace(0, len(metric_val), down_sampled_to, dtype=int)
                     used_metric = [
-                        np.mean(metric_val[indices[i]: indices[i + 1]])
-                        for i in range(down_sampled_to)
-                    ]
+                        np.mean(metric_val[indices[i]:indices[i + 1]])
+                        for i in range(down_sampled_to - 1)
+                    ]  # length: len(down_sampled_to) - 1
                 else:
-                    indices = np.arange(len(metric_val))
                     used_metric = metric_val
 
-                ax.plot(indices, used_metric, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
+                ax.plot(used_metric, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
 
                 if trendline:
                     if len(used_metric) >= 4:  # // 2 > 2

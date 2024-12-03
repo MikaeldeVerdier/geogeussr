@@ -60,13 +60,17 @@ class DatasetHandler:
 
         return one_hot_country, encoded_coords
 
-    def create_generator(self, input_shape, preprocess_function, country_name, y_index, batch_size):
+    def get_country_annotations(self, country_name):
         if country_name is not None:
             country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
         else:
             country_annotations = self.annotations
 
+        return country_annotations
+
+    def create_generator(self, input_shape, preprocess_function, country_name, y_index, batch_size):
         while True:
+            country_annotations = self.get_country_annotations(country_name)
             chosen_annotations = random.sample(country_annotations, min(batch_size, len(country_annotations)))
 
             x_batch = []
@@ -95,11 +99,15 @@ class DatasetHandler:
     def create_dataset(self, input_shape, num_classes, image_size, preprocess_function, country_name, y_index, batch_size):
         generator = lambda: self.create_generator(image_size, preprocess_function, country_name, y_index, batch_size)  # why does this need to be lambda-wrapped (wrapped at all)?
 
+        country_annotations = self.get_country_annotations(country_name)  # unecessarily calculated independently twice
+        used_batch_size = min(batch_size, len(country_annotations))
+        if used_batch_size == 0:
+            pass
         dataset = Dataset.from_generator(
             generator,
             output_signature=(
-                tf.TensorSpec(shape=(batch_size,) + input_shape, dtype=tf.float32),
-                tf.TensorSpec(shape=(batch_size, num_classes), dtype=tf.float32)
+                tf.TensorSpec(shape=(used_batch_size,) + input_shape, dtype=tf.float32),
+                tf.TensorSpec(shape=(used_batch_size, num_classes), dtype=tf.float32)
             )
         )
 

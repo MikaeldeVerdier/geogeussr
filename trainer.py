@@ -127,7 +127,7 @@ class Trainer:
 
     def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
-        class_weights = {}
+        class_weights = None
         country_name = country_name
         y_index = 1
         name = country_name

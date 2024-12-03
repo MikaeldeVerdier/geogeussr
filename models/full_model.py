@@ -30,9 +30,7 @@ class FullModel(SubclassedModelJSON):
             self.classifier = ConvolutionalNeuralNetwork(
                 image_size,
                 num_unfrozen_base_layers,
-                cls_cnn_cfg.NUM_LAYERS,
-                cls_cnn_cfg.NUM_FILTERS,
-                cls_cnn_cfg.KERNEL_SIZE,
+                cls_cnn_cfg.CONV_LAYERS,
                 cls_cnn_cfg.DENSE_LAYERS,
                 cls_cnn_cfg.NUM_CLASSES,
                 cls_cnn_cfg.FINAL_ACTIVATION,
@@ -155,9 +153,7 @@ class FullModel(SubclassedModelJSON):
         regressor = ConvolutionalNeuralNetwork(
             self.used_input_shape,
             self.num_unfrozen_base_layers,
-            cls_cnn_cfg.NUM_LAYERS,
-            cls_cnn_cfg.NUM_FILTERS,
-            cls_cnn_cfg.KERNEL_SIZE,
+            cls_cnn_cfg.CONV_LAYERS,
             cls_cnn_cfg.DENSE_LAYERS,
             cls_cnn_cfg.NUM_CLASSES,
             cls_cnn_cfg.FINAL_ACTIVATION,
@@ -171,9 +167,7 @@ class FullModel(SubclassedModelJSON):
         regressor = ConvolutionalNeuralNetwork(
             self.used_input_shape,
             self.num_unfrozen_base_layers,
-            reg_cnn_cfg.NUM_LAYERS,
-            reg_cnn_cfg.NUM_FILTERS,
-            reg_cnn_cfg.KERNEL_SIZE,
+            reg_cnn_cfg.CONV_LAYERS,
             reg_cnn_cfg.DENSE_LAYERS,
             reg_cnn_cfg.NUM_CLASSES,
             reg_cnn_cfg.FINAL_ACTIVATION,

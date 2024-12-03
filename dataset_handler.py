@@ -75,7 +75,7 @@ class DatasetHandler:
                 x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
                 x_batch.append(x)
 
-                if y_index != 0 and y_index != 0:
+                if y_index != 0 and y_index != 1:
                     y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["country"]))
 
                     continue
@@ -84,7 +84,7 @@ class DatasetHandler:
                 # y_1_batch.append(y_1)
                 y_batch.append(y)
 
-            if y_index != 0 and y_index != 0:
+            if y_index != 0 and y_index != 1:
                 outputs = list(zip(*y_batch))
                 np_return = (np.array(x_batch), (np.array(outputs[0]), np.array(outputs[1])))
             else:

@@ -105,3 +105,5 @@ class MetricsVisualizer:
 
         metrics_path = os.path.join(self.save_path, f"metrics_{submodels}su_{seperate}se_{scoped}sc_{trendline}t_{down_sampled_to}d.png")
         plt.savefig(metrics_path)
+
+        plt.close()

@@ -15,6 +15,5 @@ if __name__ == "__main__":
     sam_viz = SampleVisualizer(SAVE_PATH, "dataset_generator/gadm_410.gpkg")
     # sam_viz = SampleVisualizer(SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
     sam_viz.plot_sampling()
-    # sam_viz.plot_sampling(load_points=True)  # to use saved points from previous visualization
+    # sam_viz.plot_sampling(load_points=True, show_map=False)  # to use saved points from previous visualization
     # """
- 

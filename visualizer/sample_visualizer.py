@@ -56,7 +56,7 @@ class SampleVisualizer:
 
         return heatmap.T
 
-    def plot_sampling(self, load_points=False, n_points=100000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=True):
+    def plot_sampling(self, load_points=False, n_points=100000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
         points_path = os.path.join(self.save_path, f"{n_points}_world_points.npy")
         if not load_points:
             lats = np.linspace(-90, 90, round(np.sqrt(n_points * 2 / 3)))
@@ -95,7 +95,9 @@ class SampleVisualizer:
         ])
         # cmap = "rainbow"
 
-        ax.imshow(heat_map, extent=extent, origin="lower", cmap=cmap, vmin=v_min, vmax=v_max)
+        heat_map_img = ax.imshow(heat_map, extent=extent, origin="lower", cmap=cmap, vmin=v_min, vmax=v_max)
+        cbar = plt.colorbar(heat_map_img, location="top")
+        cbar.set_label("Sample point density (points per pixel)", rotation=0, labelpad=15)
 
         if show_points:
             ax.scatter(used_points[:, 0], used_points[:, 1], color="r", s=1, zorder=4)

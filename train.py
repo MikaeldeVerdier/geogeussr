@@ -7,7 +7,7 @@ if __name__ == "__main__":
     load = False
 
     # Create a trainer (always needed)
-    trainer = Trainer(train.DATASET_PATH, train.BATCH_SIZE, train.VALIDATION_SPLIT)
+    trainer = Trainer(train.DATASET_PATH, train.VALIDATION_SPLIT, train.BATCH_SIZE)
 
     # Create a full model (always needed)
     if not load:

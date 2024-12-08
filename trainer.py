@@ -13,10 +13,12 @@ from callbacks import ModelCheckpointWithHistory
 from countries import *
 
 class Trainer:
-    def __init__(self, dataset_path, batch_size, validation_split):
-        self.validation_split = validation_split
+    def __init__(self, dataset_path, validation_split, batch_size):
+        train_batch_size = round(batch_size * (1 - validation_split))
+        val_batch_size = batch_size - train_batch_size
 
-        self.dataset_handler = DatasetHandler(dataset_path, batch_size)
+        self.train_dataset_handler = DatasetHandler(dataset_path, 1 - validation_split, train_batch_size)
+        self.val_dataset_handler = DatasetHandler(dataset_path, -validation_split, val_batch_size)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 
@@ -72,14 +74,14 @@ class Trainer:
 
         # return start_iteration
 
-    def create_dataset_split(self, input_shape, num_classes, image_size, preprocess_func, country_name, y_index, split):
-        used_batch_size = int(round(self.dataset_handler.batch_size * split))
-        if used_batch_size == 0:
-            return None
+    # def create_dataset_split(self, input_shape, num_classes, image_size, preprocess_func, country_name, y_index, split):
+    #     used_batch_size = int(round(self.dataset_handler.batch_size * split))
+    #     if used_batch_size == 0:
+    #         return None
 
-        dataset = self.dataset_handler.create_dataset(input_shape, num_classes, image_size, preprocess_func, country_name, y_index, used_batch_size)
+    #     dataset = self.dataset_handler.create_dataset(input_shape, num_classes, image_size, preprocess_func, country_name, y_index, used_batch_size)
 
-        return dataset
+    #     return dataset
 
     def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
         optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
@@ -89,8 +91,8 @@ class Trainer:
 
         output_shape = submodel.layers[0].input.shape[1:]
         num_classes = submodel.config["num_classes"]
-        train_dataset = self.create_dataset_split(output_shape, num_classes, image_size, preprocess_function, country_name, y_index, (1 - train.VALIDATION_SPLIT))
-        validation_dataset = self.create_dataset_split(output_shape, num_classes, image_size, preprocess_function, country_name, y_index, train.VALIDATION_SPLIT)
+        train_dataset = self.train_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_name, y_index)
+        validation_dataset = self.val_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_name, y_index)
 
         print(f"Training {name} for {iteration_amount} iterations")
         submodel.fit(
@@ -108,14 +110,14 @@ class Trainer:
         loss = FocalLoss()
 
         num_classes = classifier.config["num_classes"]  # don't love accessing config, should maybe be private
-        anno_count_for_i = lambda index: self.dataset_handler.annotation_counts[
-            self.dataset_handler.unique_countries.tolist().index(COUNTRIES[index])
+        anno_count_for_i = lambda index: self.train_dataset_handler.annotation_counts[
+            self.train_dataset_handler.unique_countries.tolist().index(COUNTRIES[index])
         ]  # don't like lambdas
-        ratio = len(self.dataset_handler.annotations) / num_classes
+        ratio = len(self.train_dataset_handler.annotations) / num_classes
         class_weights = {
             i:
             ratio / anno_count_for_i(i)
-            if COUNTRIES[i] in self.dataset_handler.unique_countries else
+            if COUNTRIES[i] in self.train_dataset_handler.unique_countries else
             0
             for i in range(num_classes)
         }
@@ -173,8 +175,8 @@ class Trainer:
         # )
 
         # Regressors training (trained seperately)
-        for country_name, annotation_count in zip(self.dataset_handler.unique_countries, self.dataset_handler.annotation_counts):
-            country_iteration_amount = int(iteration_amount * annotation_count / len(self.dataset_handler.annotations))
+        for country_name, annotation_count in zip(self.train_dataset_handler.unique_countries, self.train_dataset_handler.annotation_counts):
+            country_iteration_amount = int(iteration_amount * annotation_count / len(self.train_dataset_handler.annotations))
             if country_iteration_amount == 0:
                 print(f"Skipping {country_name} (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
 

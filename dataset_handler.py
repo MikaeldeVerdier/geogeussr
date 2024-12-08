@@ -10,11 +10,14 @@ from files import load_annotations
 from countries import *
 
 class DatasetHandler:
-    def __init__(self, dataset_path, batch_size):
+    def __init__(self, dataset_path, split, batch_size):
         self.dataset_path = dataset_path
         self.batch_size = batch_size
 
-        self.annotations = load_annotations(dataset_path)
+        loaded_annotations = load_annotations(dataset_path)
+        share = int(len(loaded_annotations) * split)
+
+        self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
         self.unique_countries, self.annotation_counts = np.unique([annotation["location"]["country"] for annotation in self.annotations], return_counts=True)
 
         # self.geodf = gpd.read_file(shapefile_path)
@@ -68,10 +71,10 @@ class DatasetHandler:
 
         return country_annotations
 
-    def create_generator(self, input_shape, preprocess_function, country_name, y_index, batch_size):
+    def create_generator(self, input_shape, preprocess_function, country_name, y_index):
         while True:
             country_annotations = self.get_country_annotations(country_name)
-            chosen_annotations = random.sample(country_annotations, min(batch_size, len(country_annotations)))
+            chosen_annotations = random.sample(country_annotations, min(self.batch_size, len(country_annotations)))
 
             x_batch = []
             y_batch = []
@@ -96,13 +99,13 @@ class DatasetHandler:
 
             yield np_return
 
-    def create_dataset(self, input_shape, num_classes, image_size, preprocess_function, country_name, y_index, batch_size):
-        generator = lambda: self.create_generator(image_size, preprocess_function, country_name, y_index, batch_size)  # why does this need to be lambda-wrapped (wrapped at all)?
-
+    def create_dataset(self, input_shape, num_classes, image_size, preprocess_function, country_name, y_index):
         country_annotations = self.get_country_annotations(country_name)  # unecessarily calculated independently twice
-        used_batch_size = min(batch_size, len(country_annotations))
+        used_batch_size = min(self.batch_size, len(country_annotations))
         if used_batch_size == 0:
-            pass
+            return None
+
+        generator = lambda: self.create_generator(image_size, preprocess_function, country_name, y_index)  # why does this need to be lambda-wrapped (wrapped at all)?
         dataset = Dataset.from_generator(
             generator,
             output_signature=(

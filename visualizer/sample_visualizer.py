@@ -10,7 +10,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import visualizer_config as viz_cfg
 
 class SampleVisualizer:
-    def __init__(self, save_path, shapefile_path, dissolve=True):
+    def __init__(self, save_path, shapefile_path, dissolve=True, save_dissolved=False):
         self.save_path = save_path
 
         self.geodf = gpd.read_file(shapefile_path)
@@ -18,8 +18,8 @@ class SampleVisualizer:
             self.geodf = self.geodf.dissolve()
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
-
-        # self.geodf.to_file("dissolved_gadm.gpkg", driver="GPKG")
+        if save_dissolved:
+            self.geodf.to_file("dissolved_gadm.gpkg", driver="GPKG")
 
     """
     def get_points(self, df):
@@ -118,6 +118,6 @@ class SampleVisualizer:
 if __name__ == "__main__":
     # Plot sampling
     sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
-    # sam_viz = SampleVisualizer(SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
+    # sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
     sam_viz.plot_sampling()
-    sam_viz.plot_sampling(load_points=True)  # to use saved points from previous visualization
+    # sam_viz.plot_sampling(load_points=True)  # to use saved points from previous visualization

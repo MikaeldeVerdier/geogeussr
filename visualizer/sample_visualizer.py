@@ -17,7 +17,7 @@ class SampleVisualizer:
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
 
-        # self.geodf.to_file("test.gpkg", driver="GPKG")
+        # self.geodf.to_file("dissolved_gadm.gpkg", driver="GPKG")
 
     """
     def get_points(self, df):
@@ -58,9 +58,12 @@ class SampleVisualizer:
 
     def plot_sampling(self, load_points=False, n_points=100000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
         points_path = os.path.join(self.save_path, f"{n_points}_world_points.npy")
-        if not load_points:
-            lats = np.linspace(-90, 90, round(np.sqrt(n_points * 2 / 3)))
-            lngs = np.linspace(-180, 180, round(np.sqrt(n_points * 4 / 3)))  # for evenly spaced dots
+        if not load_points:  # Why haven't I looked into Hammersley sampling?
+            n_lats = round(np.sqrt(n_points * 2 / 3))
+            n_lngs = round(n_points / n_lats)
+
+            lats = np.linspace(-90, 90, n_lats)
+            lngs = np.linspace(-180, 180, n_lngs)
             points = [Point(lng, lat) for lat in lats for lng in lngs]
 
             used_points = self.simulate_sampling(tuple(points), self.geodf.boundary)
@@ -81,7 +84,7 @@ class SampleVisualizer:
             extent = [-180, 180, -90, 90]
 
         heat_map = self.generate_heatmap(used_points, smoothing, bins)
-        if normalize_heatmap:
+        if normalize_heatmap:  # Could use a log_normalizer instead to get landmasses some color. Don't think it's worth though because coast lines should be this emphasized
             v_min = np.min(heat_map)  # will almost assuredly be 0
             v_max = np.max(heat_map)
         else:
@@ -102,7 +105,9 @@ class SampleVisualizer:
         if show_points:
             ax.scatter(used_points[:, 0], used_points[:, 1], color="r", s=1, zorder=4)
 
+        plt.axis("off")
+
         sampling_path = os.path.join(self.save_path, f"sampling_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png")
-        plt.savefig(sampling_path, dpi=1000)
+        plt.savefig(sampling_path, dpi=1000, bbox_inches="tight")
 
         plt.close()

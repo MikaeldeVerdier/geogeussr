@@ -3,6 +3,8 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
+import visualizer_config as viz_cfg
+
 class MetricsVisualizer:
     def __init__(self, save_path):
         self.save_path = save_path
@@ -107,3 +109,9 @@ class MetricsVisualizer:
         plt.savefig(metrics_path)
 
         plt.close()
+
+
+if __name__ == "__main__":
+    # Plot metrics (with model from save_path)
+    met_viz = MetricsVisualizer(viz_cfg.SAVE_PATH)
+    met_viz.plot_metrics(seperate=True, scoped=True, trendline=True, down_sampled_to=1000)

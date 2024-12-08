@@ -7,6 +7,8 @@ from shapely.ops import nearest_points
 from scipy.ndimage import gaussian_filter
 from matplotlib.colors import LinearSegmentedColormap
 
+import visualizer_config as viz_cfg
+
 class SampleVisualizer:
     def __init__(self, save_path, shapefile_path, dissolve=True):
         self.save_path = save_path
@@ -111,3 +113,11 @@ class SampleVisualizer:
         plt.savefig(sampling_path, dpi=1000, bbox_inches="tight")
 
         plt.close()
+
+
+if __name__ == "__main__":
+    # Plot sampling
+    sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
+    # sam_viz = SampleVisualizer(SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
+    sam_viz.plot_sampling()
+    sam_viz.plot_sampling(load_points=True)  # to use saved points from previous visualization

@@ -28,8 +28,8 @@ class Trainer:
         return optimizer
 
     def create_checkpoint_callback(self, load, save_freq, name):
-        history_filepath = os.path.join(self.save_path, name, f"{name}_training_log.json")  # f"{self.save_path}/{name}/training_log.json"
-        checkpoint_filepath = os.path.join(self.save_path, name, f"{name}.keras")  # "{epoch}" ?
+        history_filepath = os.path.join(self.save_path, f"{name}_training_log.json")  # f"{self.save_path}/{name}/training_log.json"
+        checkpoint_filepath = os.path.join(self.save_path, f"{name}.keras")  # "{epoch}" ?
         model_checkpoint_callback = ModelCheckpointWithHistory(
             load_initial=load,
             history_filepath=history_filepath,

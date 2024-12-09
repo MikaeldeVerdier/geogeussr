@@ -6,18 +6,18 @@ import matplotlib.pyplot as plt
 import visualizer_config as viz_cfg
 
 class MetricsVisualizer:
-    def __init__(self, save_path):
+    def __init__(self, load_path, save_path):
         self.save_path = save_path
 
-        self.load_metrics(save_path)
+        self.load_metrics(load_path)
 
-    def load_metrics(self, save_path):
+    def load_metrics(self, load_path):
         self.metrics = {}
-        for submodel_dir in os.listdir(save_path):
+        for submodel_dir in os.listdir(load_path):
             if submodel_dir.endswith(".keras"):
                 continue
             
-            metrics_path = os.path.join(save_path, submodel_dir, f"{submodel_dir}_training_log.json")
+            metrics_path = os.path.join(load_path, submodel_dir, f"{submodel_dir}_training_log.json")
             if not os.path.exists(metrics_path):
                 continue
 
@@ -112,6 +112,6 @@ class MetricsVisualizer:
 
 
 if __name__ == "__main__":
-    # Plot metrics (with model from save_path)
-    met_viz = MetricsVisualizer(viz_cfg.SAVE_PATH)
+    # Plot metrics (with model from load_path)
+    met_viz = MetricsVisualizer(viz_cfg.LOAD_PATH, viz_cfg.SAVE_PATH)
     met_viz.plot_metrics(seperate=True, scoped=True, trendline=True, down_sampled_to=1000)

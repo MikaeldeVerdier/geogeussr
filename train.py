@@ -8,7 +8,7 @@ from trainer import Trainer
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
 
 if __name__ == "__main__":
-    model_path = os.path.join(train.SAVE_PATH, model_cfg.NAME)
+    model_path = os.path.join(train.SAVE_PATH, f"{model_cfg.NAME}.keras")
     load = False
 
     # Create a trainer (always needed)
@@ -27,7 +27,7 @@ if __name__ == "__main__":
             cnn_cfg.L2_REG
         )
     else:
-        model = load_model(model_path)
+        model = ConvolutionalNeuralNetwork.load(model_path)
 
     trainer.train(model, load, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, name=model_cfg.NAME)
 

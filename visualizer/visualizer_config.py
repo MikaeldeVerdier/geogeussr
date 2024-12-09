@@ -1,2 +1,2 @@
-# Should this be here or in /configs/
+LOAD_PATH = "save_folder"
 SAVE_PATH = "visualizations"

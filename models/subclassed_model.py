@@ -4,7 +4,7 @@ import json
 from keras.models import Model, load_model
 # from keras.layers import Input  # UNCOMMENT FOR COMPATIBILITY
 
-class SubclassedModel(Model):
+class SubclassedModel(Model):  # hate that this is needed
     def __init__(self, **kwargs):  # why only kwargs?
         super().__init__()
 
@@ -25,7 +25,7 @@ class SubclassedModel(Model):
 
     @classmethod
     def load(cls, *args, **kwargs):
-        func_model = load_model(*args, **kwargs)
+        func_model = load_model(*args, custom_objects={cls.__name__: cls}, **kwargs)
         subclassed_model = func_model.layers[-1]
 
         return subclassed_model

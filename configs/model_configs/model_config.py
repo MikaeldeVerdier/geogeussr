@@ -1,2 +1,4 @@
+NAME = "regressor"
+
 IMAGE_SIZE = (640, 640, 3)
 UNFROZEN_BASE_LAYERS = 10

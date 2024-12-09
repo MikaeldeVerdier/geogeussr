@@ -1,46 +1,34 @@
-import configs.training_config as train
-import configs.full_model_config as model_cfg
+import os
+from keras.models import load_model
+
+import configs.runtime_configs.training_config as train
+import configs.model_configs.model_config as model_cfg
+import configs.model_configs.cnn_config as cnn_cfg
 from trainer import Trainer
-from models.full_model import FullModel
+from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
 
 if __name__ == "__main__":
+    model_path = os.path.join(train.SAVE_PATH, model_cfg.NAME)
     load = False
 
     # Create a trainer (always needed)
-    trainer = Trainer(train.DATASET_PATH, train.VALIDATION_SPLIT, train.BATCH_SIZE)
+    trainer = Trainer(train.DATASET_PATH, train.VALIDATION_SPLIT, train.BATCH_SIZE, train.SAVE_PATH)
 
     # Create a full model (always needed)
     if not load:
-        model = FullModel(model_cfg.IMAGE_SIZE, model_cfg.UNFROZEN_BASE_LAYERS)  # Use a new full model
+        model = ConvolutionalNeuralNetwork(
+            model_cfg.IMAGE_SIZE,
+            model_cfg.UNFROZEN_BASE_LAYERS,
+            cnn_cfg.CONV_LAYERS,
+            cnn_cfg.DENSE_LAYERS,
+            cnn_cfg.NUM_CLASSES,
+            cnn_cfg.FINAL_ACTIVATION,
+            cnn_cfg.KERNEL_INITIALIZER,
+            cnn_cfg.L2_REG
+        )
     else:
-        model = FullModel.load_incomplete(train.SAVE_PATH)  # Load a full (incomplete) model
+        model = load_model(model_path)
 
-    # Train the full model
-    # """
-    trainer.train_fullmodel(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, load)
+    trainer.train(model, load, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, name=model_cfg.NAME)
 
-    model.save(train.SAVE_PATH)
-    # """
-
-    """
-    # Train classifier only
-    if not load:
-        classifier = model.create_classifier()  # Use a new classifier
-    else:
-        classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
-
-    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
-    # model.save(train.SAVE_PATH)
-    """
-
-    # Train a regressor only
-    """
-    country_name = "SWE"
-    if not load:
-        regressor = model.create_regressor()  # Use a new regressor
-    else:
-        regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # Load a regressor
-
-    trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
-    # model.save(train.SAVE_PATH)
-    """
+    model.save(model_path)

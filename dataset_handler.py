@@ -2,7 +2,6 @@ import os
 import numpy as np
 import random
 import cv2
-import pyproj
 import tensorflow as tf
 from tensorflow.data import Dataset
 
@@ -18,7 +17,6 @@ class DatasetHandler:
         share = int(len(loaded_annotations) * split)
 
         self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
-        self.unique_countries, self.annotation_counts = np.unique([annotation["location"]["country"] for annotation in self.annotations], return_counts=True)
 
         # self.geodf = gpd.read_file(shapefile_path)
         # self.geodf = self.geodf.dissolve(by="GID_0")
@@ -44,37 +42,14 @@ class DatasetHandler:
 
         return preprocessed_image
 
-    def encode_location(self, location, index):
-        country_index = COUNTRIES.index(location["country"])
-        one_hot_country = np.eye(len(COUNTRIES))[country_index]  # Really should check output_shape for the classifier (num_classes) # one_hot_country = np.zeros(len(COUNTRIES)); one_hot_country[COUNTRIES.index(country_name)] = 1
+    def encode_location(self, location):
+        encoded_coords = [location["lat"], location["lng"]]
 
-        if index == 0:
-            return one_hot_country
+        return encoded_coords
 
-        origin = COUNTRY_ORIGINGS[country_index]  # don't like but I think it's fine because it's just one entry
-        # origin = country.to_crs("EPSG:3857").geometry.centroid.to_crs("EPSG:4326").iloc[0]  # don't like but I think it's fine because it's just one entry
-        proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # Azimuthal equidistant projection for accurate (x, y) coordinates
-        local_x, local_y = proj(location["lng"], location["lat"])  # DECODE COORDS IS JUST proj(local_x, local_y, inverse=True)
-
-        encoded_coords = np.array([local_x / 1000, local_y / 1000])  # in km now  # to decode: * 1000
-
-        if index == 1:
-            return encoded_coords
-
-        return one_hot_country, encoded_coords
-
-    def get_country_annotations(self, country_name):
-        if country_name is not None:
-            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
-        else:
-            country_annotations = self.annotations
-
-        return country_annotations
-
-    def create_generator(self, input_shape, preprocess_function, country_name, y_index):
+    def create_generator(self, input_shape, preprocess_function):
         while True:
-            country_annotations = self.get_country_annotations(country_name)
-            chosen_annotations = random.sample(country_annotations, min(self.batch_size, len(country_annotations)))
+            chosen_annotations = random.sample(self.annotations, min(self.batch_size, len(self.annotations)))
 
             x_batch = []
             y_batch = []
@@ -82,69 +57,24 @@ class DatasetHandler:
                 x = self.encode_image(annotation["image_name"], input_shape, preprocess_function)
                 x_batch.append(x)
 
-                if y_index != 0 and y_index != 1:
-                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["country"]))
-
-                    continue
-
-                y = self.encode_location(annotation["location"], y_index)
+                y = self.encode_location(annotation["location"])
                 # y_1_batch.append(y_1)
                 y_batch.append(y)
 
-            if y_index != 0 and y_index != 1:
-                outputs = list(zip(*y_batch))
-                np_return = (np.array(x_batch), (np.array(outputs[0]), np.array(outputs[1])))
-            else:
-                np_return = (np.array(x_batch), np.array(y_batch))
+            yield (np.array(x_batch), np.array(y_batch))
 
-            yield np_return
-
-    def create_dataset(self, input_shape, num_classes, image_size, preprocess_function, country_name, y_index):
-        country_annotations = self.get_country_annotations(country_name)  # unecessarily calculated independently twice
-        used_batch_size = min(self.batch_size, len(country_annotations))
+    def create_dataset(self, image_size, num_classes, preprocess_function):
+        used_batch_size = min(self.batch_size, len(self.annotations))
         if used_batch_size == 0:
             return None
 
-        generator = lambda: self.create_generator(image_size, preprocess_function, country_name, y_index)  # why does this need to be lambda-wrapped (wrapped at all)?
+        generator = lambda: self.create_generator(image_size, preprocess_function)  # why does this need to be lambda-wrapped (wrapped at all)?
         dataset = Dataset.from_generator(
             generator,
             output_signature=(
-                tf.TensorSpec(shape=(used_batch_size,) + input_shape, dtype=tf.float32),
+                tf.TensorSpec(shape=(used_batch_size,) + image_size, dtype=tf.float32),
                 tf.TensorSpec(shape=(used_batch_size, num_classes), dtype=tf.float32)
             )
         )
 
         return dataset
-
-    def decode_predictions(self, class_probs, regressed_values, ret_country=False, ret_local_coords=False):
-        coords = []
-        countries = []
-        local_coords = []
-        for batch_probs, batch_vals in zip(class_probs, regressed_values):
-            country_index = np.argmax(batch_probs, axis=-1)
-
-            origin = COUNTRY_ORIGINGS[country_index]
-
-            local_x = batch_vals[0] * 1000
-            local_y = batch_vals[1] * 1000
-
-            proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # could store these from encoding
-            lng, lat = proj(local_x, local_y, inverse=True)
-
-            coords.append([lat, lng])
-            if ret_country:
-                country_conf = batch_probs[country_index]
-                countries.append([COUNTRIES[country_index], country_conf])
-            if ret_local_coords:
-                local_coords.append([local_x, local_y])
-
-        if not ret_country or ret_local_coords:
-            return np.array(coords)
-
-        ret_vals = [np.array(coords)]
-        if ret_country:
-            ret_vals.append(countries)
-        if ret_local_coords:
-            ret_vals.append(local_coords)
-
-        return ret_vals

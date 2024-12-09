@@ -1,12 +1,15 @@
 import tensorflow as tf
 tf.config.set_visible_devices([], "GPU")  # because entire model will be model, gpu memory probably won't be enough
 
-import configs.testing_config as test
+import os
+from keras.models import load_model
+
+import configs.runtime_configs.testing_config as test_cfg
+import configs.model_configs.model_config as model_cfg
 from evalutator import Evaluator
-from models.full_model import FullModel
 
 if __name__ == "__main__":
-    model = FullModel.load_complete(test.SAVE_PATH)
+    model = load_model(os.path.join(test_cfg.SAVE_PATH, model_cfg.NAME))
 
-    evaluator = Evaluator(test.DATASET_PATH)
-    evaluator.evaluate(model, test.AMOUNT_ITERATIONS)
+    evaluator = Evaluator(test_cfg.DATASET_PATH)
+    evaluator.evaluate(model, test_cfg.AMOUNT_ITERATIONS)

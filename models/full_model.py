@@ -3,8 +3,8 @@ import tensorflow as tf
 from keras.applications import VGG16
 from keras.applications.vgg16 import preprocess_input
 
-import configs.classifier_configs.cnn_config as cls_cnn_cfg
-import configs.regressor_configs.cnn_config as reg_cnn_cfg
+import configs.model_configs.classifier_configs.cnn_config as cls_cnn_cfg
+import configs.model_configs.regressor_configs.cnn_config as reg_cnn_cfg
 from models.subclassed_model import SubclassedModelJSON
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
 

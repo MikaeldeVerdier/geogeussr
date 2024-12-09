@@ -3,8 +3,8 @@ import os
 from keras.optimizers import Adam
 from keras.optimizers.schedules import ExponentialDecay
 
-import configs.training_config as train
-import configs.adam_config as adam
+import configs.runtime_configs.training_config as train
+import configs.model_configs.adam_config as adam
 from models.losses.focal_loss import FocalLoss
 from models.losses.root_mean_squared_error import RootMeanSquareError
 from models.full_model import FullModel

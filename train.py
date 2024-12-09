@@ -1,5 +1,5 @@
-import configs.training_config as train
-import configs.full_model_config as model_cfg
+import configs.runtime_configs.training_config as train
+import configs.model_configs.full_model_config as model_cfg
 from trainer import Trainer
 from models.full_model import FullModel
 

@@ -1,17 +1,26 @@
 import os
 import json
-from copy import copy
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import Callback
 
-class ModelCheckpointWithHistory(ModelCheckpoint):
-    def __init__(self, load_initial, history_filepath, **kwargs):
+class ModelCheckpointWithHistory(Callback):
+    def __init__(self, load_initial, history_filepath, model_filepath, save_interval, **kwargs):
         super().__init__(**kwargs)
 
         self.load = load_initial
         self.history_filepath = history_filepath
-        self.history = {}
+        self.model_filepath = model_filepath
+        self.save_interval = save_interval
+
+        self.history = self.load_metrics() if load_initial else {}
+        self.num_unsaved_epochs = 0
 
         self.setup_save_folder()
+
+    def get_epoch(self):
+        vals = self.history.values()
+        epoch = len(list(vals)[0]) if len(vals) else 0
+
+        return epoch
 
     def setup_save_folder(self):
         save_folders = self.history_filepath.replace("\\", "/").split("/")[:-1]
@@ -22,38 +31,27 @@ class ModelCheckpointWithHistory(ModelCheckpoint):
                 os.mkdir(folder_to_check)  # why doesn't os.mkdir just create all folders?
 
     def append_to_history(self, old_logs, logs, is_test=False):
-        appended_logs = {
-            f"val_{key}"
-            if is_test else key:
-            old_logs.get(f"val_{key}" if is_test else key, []) + (value if isinstance(value, list) else [float(value)])  # ugly
-
-            for key, value in logs.items()
-        }
+        appended_logs = {key: old_logs.get(key, []) + [value] for key, value in logs.items()}
         new_logs = old_logs | appended_logs
 
         return new_logs
 
-    def on_train_batch_end(self, batch, logs=None):
+    def load_metrics(self):
+        with open(self.history_filepath, "r") as f:
+            old_metrics = json.load(f)
+
+        return old_metrics
+
+    def save_metrics(self):
+        with open(self.history_filepath, "w") as f:
+            json.dump(self.history, f)
+
+    def on_epoch_end(self, epoch, logs=None):
         self.history = self.append_to_history(self.history, logs)
+        self.num_unsaved_epochs += 1
 
-        copy_self = copy(self)  # need to copy because calling _should_save_on_batch has a persistent impact
-        if copy_self._should_save_on_batch(batch):
-            if self.load and os.path.exists(self.history_filepath):
-                with open(self.history_filepath, "r") as f:
-                    old_metrics = json.load(f)
-            else:
-                old_metrics = {}
+        if self.num_unsaved_epochs >= self.save_interval:  # could just use (epoch + 1) % self.save_iterval since epoch is correct now
+            self.save_metrics()
+            self.model.save(self.model_filepath)
 
-            used_metrics = self.append_to_history(old_metrics, self.history)  # validation metrics are 1 behind when saving...
-            with open(self.history_filepath, "w") as f:
-                json.dump(used_metrics, f)
-
-            self.load = True
-            self.history = {}  # I load them again when it's time to save next
-
-        super().on_train_batch_end(batch, logs)
-
-    def on_test_batch_end(self, batch, logs=None):
-        self.history = self.append_to_history(self.history, logs, is_test=True)
-
-        super().on_test_batch_end(batch, logs)
+            self.num_unsaved_epochs = 0

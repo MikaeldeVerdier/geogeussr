@@ -29,8 +29,8 @@ if __name__ == "__main__":
     else:
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
-    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
-    # trainer.train_classifier_stepwise(classifier, load, model.used_input_shape, model.base_process, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)  # Train stepwise (a few countries at a time)
+    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    # trainer.train_classifier_stepwise(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)  # Train stepwise (a few countries at a time)
     # model.save(train.SAVE_PATH)
     """
 

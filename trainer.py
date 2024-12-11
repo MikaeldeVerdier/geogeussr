@@ -54,16 +54,10 @@ class Trainer:
 
     #     return csv_logger_callback
 
-    def create_checkpoint_callback(self, load, save_freq, name):
+    def create_checkpoint_callback(self, load, save_interval, name):
         history_filepath = os.path.join(train.SAVE_PATH, name, f"{name}_training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
         checkpoint_filepath = os.path.join(train.SAVE_PATH, name, f"{name}.keras")  # "{epoch}" ?
-        model_checkpoint_callback = ModelCheckpointWithHistory(
-            load_initial=load,
-            history_filepath=history_filepath,
-            filepath=checkpoint_filepath,
-            verbose=1,
-            save_freq=save_freq
-        )
+        model_checkpoint_callback = ModelCheckpointWithHistory(load, history_filepath, model_filepath=checkpoint_filepath, save_interval=save_interval)
 
         return model_checkpoint_callback
 
@@ -84,13 +78,17 @@ class Trainer:
 
     #     return dataset
 
-    def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, iteration_amount, save_ratio, name):
+    def train_submodel(self, submodel, image_size, preprocess_function, loss, class_weights, country_names, y_index, iteration_amount, load=None, save_ratio=None, name=None, callback=None):
         if not submodel.compiled:  # COMMENT FOR COMPATIBILITY
         # if submodel.compiled_loss is None:  # UNCOMMENT FOR COMPATIBILITY
             optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
             submodel.compile(optimizer=optimizer, loss=loss)
 
-        checkpoint_callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
+        if callback is None:
+            save_interval = int(iteration_amount * save_ratio)
+            callback = self.create_checkpoint_callback(load, save_interval, name)  # should regressors use the same ratio or same amount?
+        start_iteration = callback.get_epoch()
+        end_iteration = start_iteration + iteration_amount
 
         output_shape = submodel.layers[0].input.shape[1:]
         num_classes = submodel.num_classes
@@ -100,9 +98,9 @@ class Trainer:
         print(f"Training {name} for {iteration_amount} iterations")
         submodel.fit(
             train_dataset,
-            epochs=iteration_amount,
+            epochs=end_iteration,
             class_weight=class_weights,
-            callbacks=[checkpoint_callback],
+            callbacks=[callback],
             validation_data=validation_dataset,
             initial_epoch=start_iteration,
             validation_steps=1,
@@ -119,7 +117,7 @@ class Trainer:
 
         return class_weights
 
-    def train_classifier(self, classifier, load, image_size, preprocess_function, start_iteration, iteration_amount, save_ratio):
+    def train_classifier(self, classifier, load, image_size, preprocess_function, iteration_amount, save_ratio):
         loss = FocalLoss()
 
         class_weights = self.create_classifier_class_weights(classifier.num_classes)
@@ -127,10 +125,13 @@ class Trainer:
         y_index = 0
         name = "classifier"
 
-        self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, country_name, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
 
-    def train_classifier_stepwise(self, classifier, load, image_size, preprocess_function, start_iteration, iteration_amount, save_ratio, num_steps=20):
+    def train_classifier_stepwise(self, classifier, load, image_size, preprocess_function, iteration_amount, save_ratio, num_steps=20):
         loss = FocalLoss()
+        y_index = 0
+        name = "classifier"
+        callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)
         class_weights = self.create_classifier_class_weights(classifier.num_classes)
 
         proposed_range = np.unique(np.round(np.linspace(0, len(self.train_dataset_handler.unique_countries), num_steps)))
@@ -141,31 +142,26 @@ class Trainer:
             used_country_indices = np.argsort(self.train_dataset_handler.annotation_counts)[:num_countries]
             country_names = self.train_dataset_handler.unique_countries[used_country_indices]
 
-            y_index = 0
-            name = "classifier"
+            print(f"Now training on the countries of: {country_names}")
+            self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, country_names, y_index, used_iteration_amount, name=name, callback=callback)
 
-            print(f"Used countries are now: {country_names}")
-            self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, used_iteration_amount, save_ratio, name)
-
-    def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
+    def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
         class_weights = None
         country_names = [country_name]
         y_index = 1
         name = country_name
 
-        self.train_submodel(regressor, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(regressor, image_size, preprocess_function, loss, class_weights, country_names, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()
 
-        start_iteration = 0  # self.get_start_iteration()
-
         def train_submodel_shortcut(submodel, y_index, used_iteration_amount, used_country_name=None):
             if y_index == 0:
-                self.train_classifier(submodel, load, model.used_input_shape, model.base_process, start_iteration, used_iteration_amount, save_ratio)
+                self.train_classifier(submodel, load, model.used_input_shape, model.base_process, used_iteration_amount, save_ratio)
             elif y_index == 1:
-                self.train_regressor(submodel, load, model.used_input_shape, model.base_process, used_country_name, start_iteration, used_iteration_amount, save_ratio)
+                self.train_regressor(submodel, load, model.used_input_shape, model.base_process, used_country_name, used_iteration_amount, save_ratio)
             # self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
         # Classifier training (not trained seperately)

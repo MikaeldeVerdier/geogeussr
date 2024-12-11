@@ -73,16 +73,20 @@ class MetricsVisualizer:
                     # ax.set_xlim(len(list(submodel_history.values())[0]) - 100, len(list(submodel_history.values())[0]))
 
             for metric_key, metric_val in submodel_history.items():
+                metric_val = np.arange(100000)
                 if down_sampled_to != None and len(metric_val) > down_sampled_to:
                     indices = np.linspace(0, len(metric_val), down_sampled_to, dtype=int)
                     used_metric = [
                         np.mean(metric_val[indices[i]:indices[i + 1]])
                         for i in range(down_sampled_to - 1)
                     ]  # length: len(down_sampled_to) - 1
+
+                    used_indices = indices[1:]
                 else:
                     used_metric = metric_val
+                    used_indices = np.arange(len(used_metric))
 
-                ax.plot(used_metric, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
+                ax.plot(used_indices, used_metric, label=f"{metric_key}{f' ({submodel_name})' if not seperate else ''}")
 
                 if trendline:
                     if len(used_metric) >= 4:  # // 2 > 2
@@ -92,7 +96,7 @@ class MetricsVisualizer:
 
                         fit = np.polyfit(x, y, 1)
                         poly = np.poly1d(fit)
-                        ax.plot(x, poly(x), label=f"Trendline: {metric_key}{f' ({submodel_name})' if not seperate else ''}", zorder=3)
+                        ax.plot(used_indices[cut_off:], poly(x), label=f"Trendline: {metric_key}{f' ({submodel_name})' if not seperate else ''}", zorder=3)
 
             ax.set_xscale("linear")
             ax.legend()
@@ -101,7 +105,8 @@ class MetricsVisualizer:
                 for ax in axs[row_index, col_index + 1:]:  # can never be more than n_cols - 1 wrong
                     ax.remove()
 
-        title = ", ".join([text for text, val in [("seperate", seperate), ("scoped", scoped), ("trendline", trendline), (f"down_sampled to {down_sampled_to}", down_sampled_to != None)] if val])
+        text_vals = [("seperate", seperate), ("scoped", scoped), ("trendline", trendline), (f"down_sampled to {down_sampled_to}", down_sampled_to != None)]
+        title = ", ".join([text for text, val in text_vals if val])
         fig.suptitle(f"Metrics for {submodels if submodels is not None else 'all'}{f' ({title})' if title != '' else ''}", wrap=True)
         fig.tight_layout()
 

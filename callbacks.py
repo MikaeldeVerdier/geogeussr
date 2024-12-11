@@ -31,7 +31,10 @@ class ModelCheckpointWithHistory(Callback):
                 os.mkdir(folder_to_check)  # why doesn't os.mkdir just create all folders?
 
     def append_to_history(self, old_logs, logs, is_test=False):
-        appended_logs = {key: old_logs.get(key, []) + [value] for key, value in logs.items()}
+        appended_logs = {
+            key: old_logs.get(key, []) + [value]
+            for key, value in logs.items()
+        }
         new_logs = old_logs | appended_logs
 
         return new_logs

@@ -65,7 +65,11 @@ class DatasetHandler:
 
     def get_country_annotations(self, country_names):
         if country_names is not None:
-            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] in country_names]
+            country_annotations = [
+                annotation
+                for annotation in self.annotations
+                if annotation["location"]["country"] in country_names
+            ]
         else:
             country_annotations = self.annotations
 

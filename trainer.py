@@ -85,7 +85,8 @@ class Trainer:
     #     return dataset
 
     def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, iteration_amount, save_ratio, name):
-        if not submodel.compiled:
+        if not submodel.compiled:  # COMMENT FOR COMPATIBILITY
+        # if submodel.compiled_loss is None:  # UNCOMMENT FOR COMPATIBILITY
             optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
             submodel.compile(optimizer=optimizer, loss=loss)
 
@@ -143,6 +144,7 @@ class Trainer:
             y_index = 0
             name = "classifier"
 
+            print(f"Used countries are now: {country_names}")
             self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
     def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):

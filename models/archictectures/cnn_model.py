@@ -8,6 +8,8 @@ class ConvolutionalNeuralNetwork(SubclassedModel):  # don't think this needs to 
     def __init__(self, input_shape, unfrozen_base_layers, layers, dense_layers, num_classes, final_activation, kernel_initializer, l2_reg):
         super().__init__(input_shape=input_shape, unfrozen_base_layers=unfrozen_base_layers, layers=layers, dense_layers=dense_layers, num_classes=num_classes,final_activation=final_activation, kernel_initializer=kernel_initializer, l2_reg=l2_reg)
 
+        self.num_classes = num_classes
+
         base_network = VGG16(include_top=False, weights="imagenet", input_shape=input_shape)
 
         self.base_layers = base_network.layers[-unfrozen_base_layers:]

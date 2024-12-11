@@ -63,17 +63,17 @@ class DatasetHandler:
 
         return one_hot_country, encoded_coords
 
-    def get_country_annotations(self, country_name):
-        if country_name is not None:
-            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] == country_name]
+    def get_country_annotations(self, country_names):
+        if country_names is not None:
+            country_annotations = [annotation for annotation in self.annotations if annotation["location"]["country"] in country_names]
         else:
             country_annotations = self.annotations
 
         return country_annotations
 
-    def create_generator(self, input_shape, preprocess_function, country_name, y_index):
+    def create_generator(self, input_shape, preprocess_function, country_names, y_index):
         while True:
-            country_annotations = self.get_country_annotations(country_name)
+            country_annotations = self.get_country_annotations(country_names)
             chosen_annotations = random.sample(country_annotations, min(self.batch_size, len(country_annotations)))
 
             x_batch = []
@@ -104,6 +104,8 @@ class DatasetHandler:
         used_batch_size = min(self.batch_size, len(country_annotations))
         if used_batch_size == 0:
             return None
+        
+        # return self.create_generator(image_size, preprocess_function, country_name, y_index)
 
         generator = lambda: self.create_generator(image_size, preprocess_function, country_name, y_index)  # why does this need to be lambda-wrapped (wrapped at all)?
         dataset = Dataset.from_generator(

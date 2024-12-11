@@ -1,4 +1,5 @@
 import os
+import numpy as np
 # from keras.callbacks import CSVLogger, ModelCheckpoint
 from keras.optimizers import Adam
 from keras.optimizers.schedules import ExponentialDecay
@@ -83,16 +84,17 @@ class Trainer:
 
     #     return dataset
 
-    def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name):
-        optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
-        submodel.compile(optimizer=optimizer, loss=loss)
+    def train_submodel(self, submodel, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, iteration_amount, save_ratio, name):
+        if not submodel.compiled:
+            optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
+            submodel.compile(optimizer=optimizer, loss=loss)
 
         checkpoint_callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)  # should regressors use the same ratio or same amount?
 
         output_shape = submodel.layers[0].input.shape[1:]
-        num_classes = submodel.config["num_classes"]
-        train_dataset = self.train_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_name, y_index)
-        validation_dataset = self.val_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_name, y_index)
+        num_classes = submodel.num_classes
+        train_dataset = self.train_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_names, y_index)
+        validation_dataset = self.val_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_names, y_index)
 
         print(f"Training {name} for {iteration_amount} iterations")
         submodel.fit(
@@ -106,35 +108,51 @@ class Trainer:
             steps_per_epoch=1
         )
 
+    def create_classifier_class_weights(self, num_classes):
+        anno_counts = dict(zip(self.train_dataset_handler.unique_countries, self.train_dataset_handler.annotation_counts))
+        ratio = len(self.train_dataset_handler.annotations) / num_classes
+
+        weights = np.array([anno_counts.get(country, -1) for country in COUNTRIES])  # -1 instead of 0 to avoid runtime warning
+        class_weights_list = np.where(weights != -1, ratio / weights, 0)
+        class_weights = dict(zip(range(len(class_weights_list)), class_weights_list))  # kinda ugly, why is there no better way to do this?
+
+        return class_weights
+
     def train_classifier(self, classifier, load, image_size, preprocess_function, start_iteration, iteration_amount, save_ratio):
         loss = FocalLoss()
 
-        num_classes = classifier.config["num_classes"]  # don't love accessing config, should maybe be private
-        anno_count_for_i = lambda index: self.train_dataset_handler.annotation_counts[
-            self.train_dataset_handler.unique_countries.tolist().index(COUNTRIES[index])
-        ]  # don't like lambdas
-        ratio = len(self.train_dataset_handler.annotations) / num_classes
-        class_weights = {
-            i:
-            ratio / anno_count_for_i(i)
-            if COUNTRIES[i] in self.train_dataset_handler.unique_countries else
-            0
-            for i in range(num_classes)
-        }
+        class_weights = self.create_classifier_class_weights(classifier.num_classes)
         country_name = None
         y_index = 0
         name = "classifier"
 
         self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
 
+    def train_classifier_stepwise(self, classifier, load, image_size, preprocess_function, start_iteration, iteration_amount, save_ratio, num_steps=20):
+        loss = FocalLoss()
+        class_weights = self.create_classifier_class_weights(classifier.num_classes)
+
+        proposed_range = np.unique(np.round(np.linspace(0, len(self.train_dataset_handler.unique_countries), num_steps)))
+        used_range = np.array(proposed_range[proposed_range != 0], dtype=np.int16)
+
+        used_iteration_amount = int(iteration_amount / len(used_range))  # distributes the iterions equally right now...
+        for num_countries in used_range:  # save_ratio is wrong and name and shit but yeah
+            used_country_indices = np.argsort(self.train_dataset_handler.annotation_counts)[:num_countries]
+            country_names = self.train_dataset_handler.unique_countries[used_country_indices]
+
+            y_index = 0
+            name = "classifier"
+
+            self.train_submodel(classifier, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, used_iteration_amount, save_ratio, name)
+
     def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, start_iteration, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
         class_weights = None
-        country_name = country_name
+        country_names = [country_name]
         y_index = 1
         name = country_name
 
-        self.train_submodel(regressor, load, image_size, preprocess_function, loss, class_weights, country_name, y_index, start_iteration, iteration_amount, save_ratio, name)
+        self.train_submodel(regressor, load, image_size, preprocess_function, loss, class_weights, country_names, y_index, start_iteration, iteration_amount, save_ratio, name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()

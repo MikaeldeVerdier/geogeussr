@@ -73,7 +73,6 @@ class MetricsVisualizer:
                     # ax.set_xlim(len(list(submodel_history.values())[0]) - 100, len(list(submodel_history.values())[0]))
 
             for metric_key, metric_val in submodel_history.items():
-                metric_val = np.arange(100000)
                 if down_sampled_to != None and len(metric_val) > down_sampled_to:
                     indices = np.linspace(0, len(metric_val), down_sampled_to, dtype=int)
                     used_metric = [

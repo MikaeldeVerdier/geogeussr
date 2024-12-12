@@ -58,24 +58,7 @@ class SampleVisualizer:
 
         return heatmap.T
 
-    def plot_sampling(self, load_points=False, n_points=100000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
-        points_path = os.path.join(self.save_path, f"{n_points}_world_points.npy")
-        if not load_points:  # Why haven't I looked into Hammersley sampling?
-            n_lats = round(np.sqrt(n_points * 2 / 3))
-            n_lngs = round(n_points / n_lats)
-
-            lats = np.linspace(-90, 90, n_lats)
-            lngs = np.linspace(-180, 180, n_lngs)
-            points = [Point(lng, lat) for lat in lats for lng in lngs]
-
-            used_points = self.simulate_sampling(tuple(points), self.geodf.boundary)
-            # boundary.plot()
-            # boundary_points = gpd.GeoDataFrame(geometry=self.get_points(boundary), crs=boundary.crs)
-        
-            np.save(points_path, used_points)
-        else:
-            used_points = np.load(points_path)
-
+    def plot_sampling(self, points, file_name, smoothing, bins, normalize_heatmap, show_map, show_points):
         if show_map:
             ax = self.geodf.plot(alpha=0.2)
 
@@ -85,7 +68,7 @@ class SampleVisualizer:
             ax = plt.gca()  # could just plot imshow first...
             extent = [-180, 180, -90, 90]
 
-        heat_map = self.generate_heatmap(used_points, smoothing, bins)
+        heat_map = self.generate_heatmap(points, smoothing, bins)
         if normalize_heatmap:  # Could use a log_normalizer instead to get landmasses some color. Don't think it's worth though because coast lines should be this emphasized
             v_min = np.min(heat_map)  # will almost assuredly be 0
             v_max = np.max(heat_map)
@@ -105,19 +88,54 @@ class SampleVisualizer:
         cbar.set_label("Sample point density (points per pixel)", rotation=0, labelpad=15)
 
         if show_points:
-            ax.scatter(used_points[:, 0], used_points[:, 1], color="r", s=1, zorder=4)
+            ax.scatter(points[:, 0], points[:, 1], color="r", s=1, zorder=4)
 
         plt.axis("off")
 
-        sampling_path = os.path.join(self.save_path, f"sampling_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png")
+        sampling_path = os.path.join(self.save_path, file_name)
         plt.savefig(sampling_path, dpi=1000, bbox_inches="tight")
 
         plt.close()
+
+    def plot_refined_sampling(self, load_points=False, n_points=1000000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
+        points_path = os.path.join(self.save_path, f"{n_points}_refined_points.npy")
+        if not load_points:
+            points = self.geodf.sample_points(n_points)
+            used_points = np.array([geom.coords[0] for geom in points.iloc[0].geoms])
+
+            np.save(points_path, used_points)
+        else:
+            used_points = np.load(points_path)
+
+        image_path = f"sampling_refined_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
+        self.plot_sampling(used_points, image_path, smoothing, bins, normalize_heatmap, show_map, show_points)
+
+    def plot_naive_sampling(self, load_points=False, n_points=1000000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
+        points_path = os.path.join(self.save_path, f"{n_points}_naive_points.npy")
+        if not load_points:  # Why haven't I looked into Hammersley sampling?
+            n_lats = round(np.sqrt(n_points * 2 / 3))
+            n_lngs = round(n_points / n_lats)
+
+            lats = np.linspace(-90, 90, n_lats)
+            lngs = np.linspace(-180, 180, n_lngs)
+            points = [Point(lng, lat) for lat in lats for lng in lngs]
+
+            used_points = self.simulate_sampling(tuple(points), self.geodf.boundary)
+            # boundary.plot()
+            # boundary_points = gpd.GeoDataFrame(geometry=self.get_points(boundary), crs=boundary.crs)
+        
+            np.save(points_path, used_points)
+        else:
+            used_points = np.load(points_path)
+
+        image_path = f"sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
+        self.plot_sampling(used_points, image_path, smoothing, bins, normalize_heatmap, show_map, show_points)
 
 
 if __name__ == "__main__":
     # Plot sampling
     sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
     # sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
-    sam_viz.plot_sampling()
-    # sam_viz.plot_sampling(load_points=True)  # to use saved points from previous visualization
+    # sam_viz.plot_naive_sampling()  # Using naive sampling
+    sam_viz.plot_refined_sampling()  # Using refined sampling
+    # sam_viz.plot_refined_sampling(load_points=True)  # to use saved points from previous visualization

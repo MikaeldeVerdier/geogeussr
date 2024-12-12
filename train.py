@@ -16,23 +16,23 @@ if __name__ == "__main__":
         model = FullModel.load_incomplete(train.SAVE_PATH)  # Load a full (incomplete) model
 
     # Train the full model
-    # """
+    """
     trainer.train_fullmodel(model, train.AMOUNT_ITERATIONS, train.SAVE_RATIO, load)
 
     model.save(train.SAVE_PATH)
-    # """
-
     """
+
     # Train classifier only
+    # """
     if not load:
         classifier = model.create_classifier()  # Use a new classifier
     else:
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
-    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
-    # trainer.train_classifier_stepwise(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)  # Train stepwise (a few countries at a time)
+    # trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    trainer.train_classifier_stepwise(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)  # Train stepwise (a few countries at a time)
     # model.save(train.SAVE_PATH)
-    """
+    # """
 
     # Train a regressor only
     """

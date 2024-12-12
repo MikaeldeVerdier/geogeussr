@@ -137,9 +137,11 @@ class Trainer:
         proposed_range = np.unique(np.round(np.linspace(0, len(self.train_dataset_handler.unique_countries), num_steps)))
         used_range = np.array(proposed_range[proposed_range != 0], dtype=np.int16)
 
-        used_iteration_amount = int(iteration_amount / len(used_range))  # distributes the iterions equally right now...
+        argsorted_countries = np.argsort(self.train_dataset_handler.annotation_counts)
+
+        used_iteration_amount = int(iteration_amount / len(used_range))  # distributes the iterions equally right now, which is not optimal
         for num_countries in used_range:  # save_ratio is wrong and name and shit but yeah
-            used_country_indices = np.argsort(self.train_dataset_handler.annotation_counts)[:num_countries]
+            used_country_indices = argsorted_countries[:num_countries]
             country_names = self.train_dataset_handler.unique_countries[used_country_indices]
 
             print(f"Now training on the countries of: {country_names}")

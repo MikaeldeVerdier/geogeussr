@@ -156,6 +156,8 @@ class SampleVisualizer:
         fig = plt.gcf()
         ani = FuncAnimation(fig, update, frames=num_frames, interval=50, blit=False)
 
+        plt.axis("off")
+
         # plt.show()
         animation_path = os.path.join(self.save_path, file_name)
         ani.save(animation_path, writer="ffmpeg", fps=40)
@@ -163,9 +165,9 @@ class SampleVisualizer:
 
 if __name__ == "__main__":
     # Plot sampling
-    # sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
-    sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
+    sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
+    # sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
     # sam_viz.plot_naive_sampling()  # Using naive sampling
     # sam_viz.plot_naive_sampling(n_points=1000)  # To animate naive sampling (lower n_points recommended)
-    # sam_viz.plot_refined_sampling()  # Using refined sampling
+    sam_viz.plot_refined_sampling()  # Using refined sampling
     # sam_viz.plot_refined_sampling(load_points=True)  # to use saved points from previous visualization

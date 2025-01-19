@@ -11,23 +11,22 @@ from models.losses.root_mean_squared_error import RootMeanSquareError
 from models.full_model import FullModel
 from dataset_handler import DatasetHandler
 from callbacks import ModelCheckpointWithHistory
-from countries import *
 
 class Trainer:
-    def __init__(self, dataset_path, validation_split, batch_size):
+    def __init__(self, dataset_path, gm_path, validation_split, batch_size):
         train_batch_size = round(batch_size * (1 - validation_split))
         val_batch_size = batch_size - train_batch_size
 
-        self.train_dataset_handler = DatasetHandler(dataset_path, 1 - validation_split, train_batch_size)
-        self.val_dataset_handler = DatasetHandler(dataset_path, -validation_split, val_batch_size)
+        self.train_dataset_handler = DatasetHandler(dataset_path, gm_path, 1 - validation_split, train_batch_size)
+        self.val_dataset_handler = DatasetHandler(dataset_path, gm_path, -validation_split, val_batch_size)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 
     """
     def conditional_add_regressor(self, model, encoded_data):
-        country_index = encoded_data[0].tolist().index(1)  # np.where(encoded_data[0] == 1)[0]
-        if model.specialized_regressors[country_index] is None:
-            model.add_regressor(country_index)
+        region_index = encoded_data[0].tolist().index(1)  # np.where(encoded_data[0] == 1)[0]
+        if model.specialized_regressors[region_index] is None:
+            model.add_regressor(region_index)
     """
 
     def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2):
@@ -69,16 +68,16 @@ class Trainer:
 
         # return start_iteration
 
-    # def create_dataset_split(self, input_shape, num_classes, image_size, preprocess_func, country_name, y_index, split):
+    # def create_dataset_split(self, input_shape, num_classes, image_size, preprocess_func, region_name, y_index, split):
     #     used_batch_size = int(round(self.dataset_handler.batch_size * split))
     #     if used_batch_size == 0:
     #         return None
 
-    #     dataset = self.dataset_handler.create_dataset(input_shape, num_classes, image_size, preprocess_func, country_name, y_index, used_batch_size)
+    #     dataset = self.dataset_handler.create_dataset(input_shape, num_classes, image_size, preprocess_func, region_name, y_index, used_batch_size)
 
     #     return dataset
 
-    def train_submodel(self, submodel, image_size, preprocess_function, loss, class_weights, country_names, y_index, iteration_amount, load=None, save_ratio=None, name=None, callback=None):
+    def train_submodel(self, submodel, image_size, preprocess_function, loss, class_weights, region_names, y_index, iteration_amount, load=None, save_ratio=None, name=None, callback=None):
         if not submodel.compiled:  # COMMENT FOR COMPATIBILITY
         # if submodel.compiled_loss is None:  # UNCOMMENT FOR COMPATIBILITY
             optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
@@ -92,8 +91,8 @@ class Trainer:
 
         output_shape = submodel.layers[0].input.shape[1:]
         num_classes = submodel.num_classes
-        train_dataset = self.train_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_names, y_index)
-        validation_dataset = self.val_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, country_names, y_index)
+        train_dataset = self.train_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, region_names, y_index)
+        validation_dataset = self.val_dataset_handler.create_dataset(output_shape, num_classes, image_size, preprocess_function, region_names, y_index)
 
         print(f"Training {name} for {iteration_amount} iterations")
         submodel.fit(
@@ -108,10 +107,10 @@ class Trainer:
         )
 
     def create_classifier_class_weights(self, num_classes):
-        anno_counts = dict(zip(self.train_dataset_handler.unique_countries, self.train_dataset_handler.annotation_counts))
+        anno_counts = dict(zip(self.train_dataset_handler.unique_regions, self.train_dataset_handler.annotation_counts))
         ratio = len(self.train_dataset_handler.annotations) / num_classes
 
-        weights = np.array([anno_counts.get(country, -1) for country in COUNTRIES])  # -1 instead of 0 to avoid runtime warning
+        weights = np.array(list(anno_counts.values()))
         class_weights_list = np.where(weights != -1, ratio / weights, 0)
         class_weights = dict(zip(range(len(class_weights_list)), class_weights_list))  # kinda ugly, why is there no better way to do this?
 
@@ -121,11 +120,11 @@ class Trainer:
         loss = FocalLoss()
 
         class_weights = self.create_classifier_class_weights(classifier.num_classes)
-        country_name = None
+        region_name = None
         y_index = 0
         name = "classifier"
 
-        self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, country_name, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
+        self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, region_name, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
 
     def train_classifier_stepwise(self, classifier, load, image_size, preprocess_function, iteration_amount, save_ratio, num_steps=20):
         loss = FocalLoss()
@@ -134,37 +133,37 @@ class Trainer:
         callback = self.create_checkpoint_callback(load, int(iteration_amount * save_ratio), name)
         class_weights = self.create_classifier_class_weights(classifier.num_classes)
 
-        proposed_range = np.unique(np.round(np.linspace(0, len(self.train_dataset_handler.unique_countries), num_steps)))
+        proposed_range = np.unique(np.round(np.linspace(0, len(self.train_dataset_handler.unique_regions), num_steps)))
         used_range = np.array(proposed_range[proposed_range != 0], dtype=np.int16)
 
         argsorted_countries = np.argsort(self.train_dataset_handler.annotation_counts)
 
         used_iteration_amount = int(iteration_amount / len(used_range))  # distributes the iterions equally right now, which is not optimal
         for num_countries in used_range:  # save_ratio is wrong and name and shit but yeah
-            used_country_indices = argsorted_countries[:num_countries]
-            country_names = self.train_dataset_handler.unique_countries[used_country_indices]
+            used_region_indices = argsorted_countries[:num_countries]
+            region_names = self.train_dataset_handler.unique_regions[used_region_indices]
 
-            print(f"Now training on the countries of: {country_names}")
-            self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, country_names, y_index, used_iteration_amount, name=name, callback=callback)
+            print(f"Now training on the countries of: {region_names}")
+            self.train_submodel(classifier, image_size, preprocess_function, loss, class_weights, region_names, y_index, used_iteration_amount, name=name, callback=callback)
 
-    def train_regressor(self, regressor, load, image_size, preprocess_function, country_name, iteration_amount, save_ratio):
+    def train_regressor(self, regressor, load, image_size, preprocess_function, region_name, iteration_amount, save_ratio):
         loss = RootMeanSquareError()
         class_weights = None
-        country_names = [country_name]
+        region_names = [region_name]
         y_index = 1
-        name = country_name
+        name = region_name
 
-        self.train_submodel(regressor, image_size, preprocess_function, loss, class_weights, country_names, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
+        self.train_submodel(regressor, image_size, preprocess_function, loss, class_weights, region_names, y_index, iteration_amount, load=load, save_ratio=save_ratio, name=name)
 
     def train_fullmodel(self, model, iteration_amount, save_ratio, load):  # kinda makes this class redundant when using a generator...
         # metrics = self.load_metrics()
 
-        def train_submodel_shortcut(submodel, y_index, used_iteration_amount, used_country_name=None):
+        def train_submodel_shortcut(submodel, y_index, used_iteration_amount, used_region_name=None):
             if y_index == 0:
                 self.train_classifier(submodel, load, model.used_input_shape, model.base_process, used_iteration_amount, save_ratio)
             elif y_index == 1:
-                self.train_regressor(submodel, load, model.used_input_shape, model.base_process, used_country_name, used_iteration_amount, save_ratio)
-            # self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_country_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
+                self.train_regressor(submodel, load, model.used_input_shape, model.base_process, used_region_name, used_iteration_amount, save_ratio)
+            # self.train_submodel(submodel, load, model.used_input_shape, model.base_process, loss, used_region_name, y_index, start_iteration, used_iteration_amount, save_ratio, name)
 
         # Classifier training (not trained seperately)
         if load:
@@ -193,29 +192,29 @@ class Trainer:
         # )
 
         # Regressors training (trained seperately)
-        for country_name, annotation_count in zip(self.train_dataset_handler.unique_countries, self.train_dataset_handler.annotation_counts):
-            country_iteration_amount = int(iteration_amount * annotation_count / len(self.train_dataset_handler.annotations))
-            if country_iteration_amount == 0:
-                print(f"Skipping {country_name} (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
+        for region_name, annotation_count in zip(self.train_dataset_handler.unique_regions, self.train_dataset_handler.annotation_counts):
+            region_iteration_amount = int(iteration_amount * annotation_count / len(self.train_dataset_handler.annotations))
+            if region_iteration_amount == 0:
+                print(f"Skipping {region_name} (not enough samples)")  # a bit misleading because it depends on more than just samples (also iteration_amount and total number of samples)
 
                 continue
 
             if load:
-                regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # don't like having to import FullModel for this
+                regressor = FullModel.load_submodel(train.SAVE_PATH, region_name)  # don't like having to import FullModel for this
             if not load or regressor is None:
                 regressor = model.create_regressor()
 
-            train_submodel_shortcut(regressor, 1, country_iteration_amount, used_country_name=country_name)
+            train_submodel_shortcut(regressor, 1, region_iteration_amount, used_region_name=region_name)
 
             # optimizer = self.build_optimizer(adam.INITIAL_LEARNING_RATE, adam.DECAY_STEPS, adam.DECAY_FACTOR, adam.BETA_1, adam.BETA_2)
             # regressor.compile(optimizer=optimizer, loss=[RootMeanSquareError()])
 
-            # checkpoint_callback = self.create_checkpoint_callback(int(used_iteration_amount * save_ratio), country_name)
+            # checkpoint_callback = self.create_checkpoint_callback(int(used_iteration_amount * save_ratio), region_name)
 
-            # train_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, (1 - train.VALIDATION_SPLIT))
-            # validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, country_name, 1, train.VALIDATION_SPLIT)
+            # train_generator = self.create_generator_split(model.used_input_shape, model.base_process, region_name, 1, (1 - train.VALIDATION_SPLIT))
+            # validation_generator = self.create_generator_split(model.used_input_shape, model.base_process, region_name, 1, train.VALIDATION_SPLIT)
 
-            # print(f"Training regressor ({country_name}) for {used_iteration_amount} iterations")
+            # print(f"Training regressor ({region_name}) for {used_iteration_amount} iterations")
             # regressor.fit(
             #     train_generator,
             #     epochs=used_iteration_amount,

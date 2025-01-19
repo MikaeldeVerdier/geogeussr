@@ -7,8 +7,7 @@ import configs.model_configs.classifier_configs.cnn_config as cls_cnn_cfg
 import configs.model_configs.regressor_configs.cnn_config as reg_cnn_cfg
 from models.subclassed_model import SubclassedModelJSON
 from models.archictectures.cnn_model import ConvolutionalNeuralNetwork
-
-from countries import *
+from configs.tool_configs.cluster_config import NUM_CLUSTERS
 
 class FullModel(SubclassedModelJSON):
     def __init__(self, image_size, num_unfrozen_base_layers, initialize_submodels=False):
@@ -69,8 +68,8 @@ class FullModel(SubclassedModelJSON):
         classifier = ConvolutionalNeuralNetwork.load(classifier_path)
         model.classifier = classifier
 
-        for i, country_name in enumerate(COUNTRIES):
-            regressor_path = os.path.join(save_path, country_name, f"{country_name}.keras")
+        for i, region_name in enumerate(NUM_CLUSTERS):
+            regressor_path = os.path.join(save_path, region_name, f"{region_name}.keras")
             if not os.path.exists(regressor_path):
                 continue
 

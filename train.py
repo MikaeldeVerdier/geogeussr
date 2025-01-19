@@ -7,7 +7,7 @@ if __name__ == "__main__":
     load = False
 
     # Create a trainer (always needed)
-    trainer = Trainer(train.DATASET_PATH, train.VALIDATION_SPLIT, train.BATCH_SIZE)
+    trainer = Trainer(train.DATASET_PATH, train.GM_PATH, train.VALIDATION_SPLIT, train.BATCH_SIZE)
 
     # Create a full model (always needed)
     if not load:
@@ -29,19 +29,18 @@ if __name__ == "__main__":
     else:
         classifier = FullModel.load_submodel(train.SAVE_PATH, "classifier")  # Load a classifier
 
-    # trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
-    trainer.train_classifier_stepwise(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)  # Train stepwise (a few countries at a time)
+    trainer.train_classifier(classifier, load, model.used_input_shape, model.base_process, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     # model.save(train.SAVE_PATH)
     # """
 
     # Train a regressor only
     """
-    country_name = "SWE"
+    region_name = 0
     if not load:
         regressor = model.create_regressor()  # Use a new regressor
     else:
-        regressor = FullModel.load_submodel(train.SAVE_PATH, country_name)  # Load a regressor
+        regressor = FullModel.load_submodel(train.SAVE_PATH, region_name)  # Load a regressor
 
-    trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, country_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
+    trainer.train_regressor(regressor, load, model.used_input_shape, model.base_process, region_name, 0, train.AMOUNT_ITERATIONS, train.SAVE_RATIO)
     # model.save(train.SAVE_PATH)
     """

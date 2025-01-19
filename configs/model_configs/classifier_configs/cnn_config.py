@@ -1,4 +1,5 @@
-from countries import *
+# from countries import *
+from configs.tool_configs.cluster_config import NUM_CLUSTERS
 
 CONV_LAYERS = [
     (64, (7, 7), (2, 2), "same", "relu"),
@@ -11,7 +12,7 @@ CONV_LAYERS = [
     *[(512, (3, 3), (1, 1), "same", "relu") for _ in range(10)],
 ]
 DENSE_LAYERS = [2048, 1024, 1024, 512]
-NUM_CLASSES = len(COUNTRIES)
+NUM_CLASSES = NUM_CLUSTERS  # len(COUNTRIES)
 FINAL_ACTIVATION = "softmax"
 KERNEL_INITIALIZER = "he_normal"
 L2_REG = 0

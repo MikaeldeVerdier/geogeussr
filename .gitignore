@@ -3,6 +3,7 @@
 *__pycache__/
 
 *.gpkg
+*.pkl
 datasets/
 
 save_folder/

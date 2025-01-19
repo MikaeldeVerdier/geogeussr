@@ -27,14 +27,6 @@ class DatasetHandler:
 
         # self.generate_clusters(num_clusters)
 
-    """
-    def generate_clusters(self, num_clusters):
-        self.coords = np.array([[annotation["location"]["lat"], annotation["location"]["lng"]] for annotation in self.annotations])
-
-        self.gm = GaussianMixture(n_components=num_clusters, random_state=0)  # Could generate a bigger sample of annotations by only fetching metadata and saving location and then mixture that
-        self.gm = self.gm.fit(self.coords)
-    """
-
     def encode_image(self, image_name, input_shape, preprocess_function):
         image_path = os.path.join(self.dataset_path, image_name)
 

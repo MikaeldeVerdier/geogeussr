@@ -68,13 +68,13 @@ class FullModel(SubclassedModelJSON):
         classifier = ConvolutionalNeuralNetwork.load(classifier_path)
         model.classifier = classifier
 
-        for i, region_name in enumerate(NUM_CLUSTERS):
-            regressor_path = os.path.join(save_path, region_name, f"{region_name}.keras")
+        for region_name in range(NUM_CLUSTERS):
+            regressor_path = os.path.join(save_path, str(region_name), f"{region_name}.keras")
             if not os.path.exists(regressor_path):
                 continue
 
             regressor = ConvolutionalNeuralNetwork.load(regressor_path)
-            model.specialized_regressors[i] = regressor
+            model.specialized_regressors[region_name] = regressor
 
         return model
 

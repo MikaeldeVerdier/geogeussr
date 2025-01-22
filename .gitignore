@@ -6,5 +6,5 @@
 *.pkl
 datasets/
 
-save_folder/
+save_folder*/
 visualizations/

@@ -21,7 +21,9 @@ class DatasetHandler:
         share = int(len(loaded_annotations) * split)
 
         self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
-        self.unique_regions, self.annotation_counts = np.unique([self.gm.predict([[annotation["location"]["lat"], annotation["location"]["lng"]]])[0] for annotation in self.annotations], return_counts=True)
+        for i, annotation in enumerate(self.annotations):
+            self.annotations[i]["location"]["region"] = self.gm.predict([[annotation["location"]["lat"], annotation["location"]["lng"]]])[0]  # could use batch predicting for all annotations
+        self.unique_regions, self.annotation_counts = np.unique([annotation["location"]["region"] for annotation in self.annotations], return_counts=True)
 
         # self.geodf = gpd.read_file(shapefile_path)
         # self.geodf = self.geodf.dissolve(by="GID_0")
@@ -40,7 +42,7 @@ class DatasetHandler:
         return preprocessed_image
 
     def encode_location(self, location, index):
-        region_index = self.gm.predict([[location["lat"], location["lng"]]])[0]
+        region_index = location["region"]
         one_hot_region = np.eye(NUM_CLUSTERS)[region_index]  # Really should check output_shape for the classifier (num_classes) # one_hot_region = np.zeros(len(COUNTRIES)); one_hot_region[COUNTRIES.index(region_name)] = 1
 
         if index == 0:
@@ -63,7 +65,7 @@ class DatasetHandler:
             region_annotations = [
                 annotation
                 for annotation in self.annotations
-                if self.gm.predict([[annotation["location"]["lat"], annotation["location"]["lng"]]])[0] in region_names
+                if annotation["location"]["region"] in region_names
             ]
         else:
             region_annotations = self.annotations
@@ -82,8 +84,7 @@ class DatasetHandler:
                 x_batch.append(x)
 
                 if y_index != 0 and y_index != 1:
-                    pred_region = self.gm.predict([[annotation["location"]["lat"], annotation["location"]["lng"]]])[0]
-                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], pred_region))
+                    y_batch.append(([annotation["location"]["lat"], annotation["location"]["lng"]], annotation["location"]["region"]))
 
                     continue
 
@@ -136,7 +137,7 @@ class DatasetHandler:
             coords.append([lat, lng])
             if ret_region:
                 region_conf = batch_probs[region_index]
-                countries.append([region_index], region_conf)
+                countries.append([region_index, region_conf])
             if ret_local_coords:
                 local_coords.append([local_x, local_y])
 

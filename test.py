@@ -1,8 +1,9 @@
+"""  # TODO: Add this
 import tensorflow as tf
 tf.config.set_visible_devices([], "GPU")  # because entire model will be model, gpu memory probably won't be enough
 
 import configs.runtime_configs.testing_config as test
-from evalutator import Evaluator
+from test_components.evalutator import Evaluator
 from models.full_model import FullModel
 
 if __name__ == "__main__":
@@ -10,3 +11,4 @@ if __name__ == "__main__":
 
     evaluator = Evaluator(test.DATASET_PATH, test.GM_PATH)
     evaluator.evaluate(model, test.AMOUNT_ITERATIONS)
+"""

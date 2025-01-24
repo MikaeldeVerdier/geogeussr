@@ -42,7 +42,7 @@ class DatasetHandler:
 
         return [country_idx, lat_norm, lon_norm]
 
-    def encode_location(self, location):
+    def encode_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
         tokenized_description = self.tokenize_description(description)
 
@@ -74,7 +74,7 @@ class DatasetHandler:
                 y = self.encode_location(annotation["location"])
                 y_batch.append(y)
 
-            yield (np.array(x_batch), np.array(y_batch)), None  # y_true not used
+            yield (np.array(x_batch), np.array(y_batch)), np.zeros((len(x_batch)))  # y_true not used
 
     def create_dataset(self, image_shape, max_tokens, region_names):
         region_annotations = self.get_region_annotations(region_names)  # unecessarily calculated independently twice
@@ -92,7 +92,7 @@ class DatasetHandler:
                     tf.TensorSpec(shape=(used_batch_size,) + image_shape, dtype=tf.float32),
                     tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.float32)
                 ),
-                tf.TensorSpec(shape=())  # y_true - None
+                tf.TensorSpec(shape=(used_batch_size,))  # y_true - doesn't matter (needs to have batch_size as first dimension though, (in some versions))
             )
         )
 

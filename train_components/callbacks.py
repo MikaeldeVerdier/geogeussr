@@ -55,6 +55,6 @@ class ModelCheckpointWithHistory(Callback):
 
         if self.num_unsaved_epochs >= self.save_interval:  # could just use (epoch + 1) % self.save_iterval since epoch is correct now
             self.save_metrics()
-            self.model.save(self.model_filepath)
+            self.model.save(self.model_filepath, save_format="tf")
 
             self.num_unsaved_epochs = 0

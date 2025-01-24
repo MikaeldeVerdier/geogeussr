@@ -4,7 +4,7 @@ from keras import layers, Model
 from model.submodels.components.transformer_block import TransformerBlock
 
 class VisionTransformer(Model):
-    def __init__(self, patch_size, num_patches, embed_dim, num_heads, ff_dim, num_layers, num_classes):
+    def __init__(self, patch_size, num_patches, embed_dim, num_heads, ff_dim, num_layers):  # , num_classes):
         super(VisionTransformer, self).__init__()
 
         self.patch_size = patch_size
@@ -15,10 +15,10 @@ class VisionTransformer(Model):
         self.transformer_blocks = [
             TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ]
-        self.mlp_head = tf.keras.Sequential([
-            layers.LayerNormalization(epsilon=1e-6),
-            layers.Dense(num_classes, activation="softmax"),
-        ])
+        # self.mlp_head = tf.keras.Sequential([
+        #     layers.LayerNormalization(epsilon=1e-6),
+        #     layers.Dense(num_classes, activation="softmax"),
+        # ])
 
     def extract_patches(self, images):
         batch_size = tf.shape(images)[0]

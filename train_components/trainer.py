@@ -31,7 +31,7 @@ class Trainer:
 
     def create_checkpoint_callback(self, load, save_interval, name):
         history_filepath = os.path.join(train_cfg.save_dir, name, f"{name}_training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
-        checkpoint_filepath = os.path.join(train_cfg.save_dir, name, f"{name}.keras")  # "{epoch}" ?
+        checkpoint_filepath = os.path.join(train_cfg.save_dir, name, f"{name}")  # "{epoch}" ?
         model_checkpoint_callback = ModelCheckpointWithHistory(load, history_filepath, model_filepath=checkpoint_filepath, save_interval=save_interval)
 
         return model_checkpoint_callback

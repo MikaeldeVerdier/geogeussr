@@ -5,6 +5,7 @@ import cv2
 import tensorflow as tf
 from tensorflow.data import Dataset
 
+from shared_components.tokenizer import Tokenizer
 from shared_components.files import load_annotations
 
 class DatasetHandler:
@@ -12,6 +13,8 @@ class DatasetHandler:
         self.dataset_path = dataset_path
         self.batch_size = batch_size
         self.regions = regions
+
+        self.tokenizer = Tokenizer(regions)
 
         loaded_annotations = load_annotations(dataset_path)
         share = int(len(loaded_annotations) * split)
@@ -30,21 +33,9 @@ class DatasetHandler:
     def generate_description(self, location):
         return f"{location['country']}, latitude {location['lat']}, longitude {location['lng']}"
 
-    def tokenize_description(self, description):  # could just skip this and have this in encode
-        components = description.split(", ")
-        country = components[0]
-        latitude = float(components[1].split(" ")[1])
-        longitude = float(components[2].split(" ")[1])
-
-        country_idx = self.regions.index(country)
-        lat_norm = (latitude + 90) / 180  # Normalize to [0, 1]
-        lon_norm = (longitude + 180) / 360  # Normalize to [0, 1]
-
-        return [country_idx, lat_norm, lon_norm]
-
     def encode_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
-        tokenized_description = self.tokenize_description(description)
+        tokenized_description = self.tokenizer.encode_texts([description])[0]
 
         return tokenized_description
 
@@ -98,36 +89,33 @@ class DatasetHandler:
 
         return dataset
 
-    """  # TODO: Add this
-    def decode_predictions(self, class_probs, regressed_values, ret_region=False, ret_local_coords=False):
-        coords = []
-        countries = []
-        local_coords = []
-        for batch_probs, batch_vals in zip(class_probs, regressed_values):
-            region_index = np.argmax(batch_probs, axis=-1)
+    def decode_predictions_standard(self, similarity_matrix, tokenized_labels):
+        best_match_idx = np.argmax(similarity_matrix, axis=-1)
+        best_match_label = np.array(tokenized_labels)[..., best_match_idx]
 
-            origin = COUNTRY_ORIGINGS[region_index]
-            local_x = batch_vals[0] * 1000
-            local_y = batch_vals[1] * 1000
+        exp_sims = np.exp(similarity_matrix)
+        norm_sims = exp_sims / np.sum(exp_sims, axis=-1)
+        best_match_confidence = norm_sims[..., best_match_idx]
 
-            proj = pyproj.Proj(proj="aeqd", lat_0=origin[1], lon_0=origin[0])  # could store these from encoding
-            lng, lat = proj(local_x, local_y, inverse=True)
+        return best_match_label, best_match_confidence
 
-            coords.append([lat, lng])
-            if ret_region:
-                region_conf = batch_probs[region_index]
-                countries.append([region_index, region_conf])
-            if ret_local_coords:
-                local_coords.append([local_x, local_y])
+    def decode_predictions_com(self, similarity_matrix, tokenized_labels):  # weird for these two to be different in args and rets
+        decoded_texts = []
+        for batch_sim in similarity_matrix:
+            norm_batch_sim = (batch_sim + 1) / 2  # needed? neg sims can't be allowed?
 
-        if not ret_region or ret_local_coords:
-            return np.array(coords)
+            total_weighted_lats = 0
+            total_weighted_lngs = 0
+            total_weight = 0
+            for similarity, label in zip(norm_batch_sim, tokenized_labels):
+                total_weighted_lats += label[1] * similarity
+                total_weighted_lngs += label[2] * similarity
+                total_weight += similarity
 
-        ret_vals = [np.array(coords)]
-        if ret_region:
-            ret_vals.append(countries)
-        if ret_local_coords:
-            ret_vals.append(local_coords)
+            avg_latitude = total_weighted_lats / total_weight
+            avg_longitude = total_weighted_lngs / total_weight
 
-        return ret_vals
-        """
+            encoded_text = [-1, avg_latitude, avg_longitude]
+            decoded_texts.append(self.tokenizer.decode_texts([encoded_text])[0])
+
+        return decoded_texts

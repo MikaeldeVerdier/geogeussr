@@ -11,15 +11,14 @@ import train_components.train_config as train_cfg
 from model.submodels.components.constrastive_loss import ContrastiveLoss
 from shared_components.dataset_handler import DatasetHandler
 from train_components.callbacks import ModelCheckpointWithHistory
-from data.countries import COUNTRIES
 
 class Trainer:
     def __init__(self):
         train_batch_size = round(train_cfg.batch_size * (1 - train_cfg.validation_split))
         val_batch_size = train_cfg.batch_size - train_batch_size
 
-        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, 1 - train_cfg.validation_split, train_batch_size, COUNTRIES)
-        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, -train_cfg.validation_split, val_batch_size, COUNTRIES)
+        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, 1 - train_cfg.validation_split, train_batch_size, train_cfg.regions)
+        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, -train_cfg.validation_split, val_batch_size, train_cfg.regions)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 

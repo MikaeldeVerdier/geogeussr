@@ -1,14 +1,8 @@
-"""  # TODO: Add this
-import tensorflow as tf
-tf.config.set_visible_devices([], "GPU")  # because entire model will be model, gpu memory probably won't be enough
-
-import configs.runtime_configs.testing_config as test
+from model.model import GeoCLIP
 from test_components.evalutator import Evaluator
-from models.full_model import FullModel
 
 if __name__ == "__main__":
-    model = FullModel.load_complete(test.SAVE_PATH)
+    geo_clip = GeoCLIP()
+    evaluator = Evaluator()
 
-    evaluator = Evaluator(test.DATASET_PATH, test.GM_PATH)
-    evaluator.evaluate(model, test.AMOUNT_ITERATIONS)
-"""
+    evaluator.evaluate(geo_clip)

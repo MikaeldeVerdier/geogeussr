@@ -265,7 +265,7 @@ COUNTRIES = [
 ]
 
 # Generated with the python script from helpers/country_origings_generator.py (from JSON)
-COUNTRY_ORIGINGS = [
+COUNTRY_ORIGINGS = [  # (LONGITUDE, LATITUDE)
     [
         -69.97028321886717,
         12.509327607639223

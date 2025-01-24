@@ -7,7 +7,7 @@ image_size = input_shape
 tokens_len = max_len
 
 # Training config
-num_regions = len(COUNTRIES)
+regions = COUNTRIES
 used_regions = None
 dataset_path = "data/datasets/dataset10"
 iteration_amount = 10

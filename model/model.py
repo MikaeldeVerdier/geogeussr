@@ -14,11 +14,14 @@ class GeoCLIP(Model):
         self.image_encoder = VisionTransformer(vit_cfg.patch_size, vit_cfg.num_patches, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
         self.text_encoder = TextTransformer(ttt_cfg.vocab_size, ttt_cfg.max_len, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
 
+    def compute_similarities(self, input1, input2):
+        return tf.matmul(input1, input2, transpose_b=True)
+
     def call(self, inputs):
         image_input, text_input = inputs
         image_embeddings = self.image_encoder(image_input)
         text_embeddings = self.text_encoder(text_input)
 
-        sim_matrix = tf.matmul(image_embeddings, text_embeddings, transpose_b=True)
+        sim_matrix = self.compute_similarities(image_embeddings, text_embeddings)
 
         return sim_matrix

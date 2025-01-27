@@ -89,19 +89,19 @@ class DatasetHandler:
 
         return dataset
 
-    def decode_predictions_standard(self, similarity_matrix, tokenized_labels):
-        best_match_idx = np.argmax(similarity_matrix, axis=-1)
+    def decode_predictions_standard(self, logits_per_image, tokenized_labels):
+        best_match_idx = np.argmax(logits_per_image, axis=-1)
         best_match_label = np.array(tokenized_labels)[..., best_match_idx]
 
-        exp_sims = np.exp(similarity_matrix)
+        exp_sims = np.exp(logits_per_image)
         norm_sims = exp_sims / np.sum(exp_sims, axis=-1)
         best_match_confidence = norm_sims[..., best_match_idx]
 
         return best_match_label, best_match_confidence
 
-    def decode_predictions_com(self, similarity_matrix, tokenized_labels):  # weird for these two to be different in args and rets
+    def decode_predictions_com(self, logits_per_image, tokenized_labels):  # weird for these two to be different in args and rets
         decoded_texts = []
-        for batch_sim in similarity_matrix:
+        for batch_sim in logits_per_image:
             norm_batch_sim = (batch_sim + 1) / 2  # needed? neg sims can't be allowed?
 
             total_weighted_lats = 0

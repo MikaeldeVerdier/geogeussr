@@ -14,19 +14,19 @@ class Evaluator:
         return prompts
 
     def evaluate(self, model):
-        prompts = self.get_prompts()  # refine guesses more...
+        prompts = self.get_prompts()
         toknized_prompts = self.dataset_handler.tokenizer.encode_texts(prompts)
-        embedded_texts = model.text_encoder.predict(toknized_prompts)
+        # embedded_texts = model.text_encoder.predict(toknized_prompts)
 
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions)
         for _ in range(test_cfg.iteration_amount):
             (image_input, text_input), _ = next(generator)
-            embedded_images = model.image_encoder.predict(image_input)
+            logits_per_image, logits_per_text = model.infer(image_input, toknized_prompts, ret_np=True)
             text_gt = self.dataset_handler.tokenizer.decode_texts(text_input)
 
-            similarities = model.compute_similarities(embedded_images, embedded_texts).numpy()
-            best_prompt, conf = self.dataset_handler.decode_predictions_standard(similarities, prompts)
-            best_prompt_com = self.dataset_handler.decode_predictions_com(similarities, toknized_prompts)
+            # similarities = model.compute_similarities(embedded_images, embedded_texts).numpy()
+            best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
+            best_prompt_com = self.dataset_handler.decode_predictions_com(logits_per_image, toknized_prompts)
 
             print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
             print(f"Model guessed (CoM): {best_prompt_com}")  # center-of-mass

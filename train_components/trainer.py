@@ -37,7 +37,7 @@ class Trainer:
 
     def train(self, model, load=False, name="GeoCLIP"):
         optimizer = self.build_optimizer(train_cfg.initial_learning_rate, train_cfg.decay_steps, train_cfg.decay_factor, train_cfg.beta_1, train_cfg.beta_2)
-        model.compile(optimizer=optimizer, loss=ContrastiveLoss(train_cfg.temperature))
+        model.compile(optimizer=optimizer, loss=ContrastiveLoss())
 
         save_interval = int(train_cfg.iteration_amount * train_cfg.save_ratio)
         callback = self.create_checkpoint_callback(load, save_interval, name)

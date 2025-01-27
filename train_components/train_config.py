@@ -22,6 +22,3 @@ decay_steps = 1000
 decay_factor = 0.95
 beta_1 = 0.99
 beta_2 = 0.95
-
-# Loss config
-temperature = 0.07

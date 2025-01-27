@@ -12,7 +12,6 @@ class TextTransformer(Model):
         self.transformer_blocks = [
             TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ]
-        self.layernorm = layers.UnitNormalization()
 
     def call(self, inputs):
         positions = tf.range(start=0, limit=tf.shape(inputs)[-1], delta=1)
@@ -20,7 +19,5 @@ class TextTransformer(Model):
 
         for block in self.transformer_blocks:
             x = block(x)
-
-        x = self.layernorm(x)
 
         return x[:, 0]

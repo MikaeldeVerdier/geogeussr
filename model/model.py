@@ -14,14 +14,24 @@ class GeoCLIP(Model):
         self.image_encoder = VisionTransformer(vit_cfg.patch_size, vit_cfg.num_patches, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
         self.text_encoder = TextTransformer(ttt_cfg.vocab_size, ttt_cfg.max_len, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
 
-    def compute_similarities(self, input1, input2):
-        return tf.matmul(input1, input2, transpose_b=True)
+        self.temperature = tf.Variable(initial_value=1.0, trainable=True, dtype=tf.float32)
 
-    def call(self, inputs):
-        image_input, text_input = inputs
+    def infer(self, image_input, text_input, ret_np=False):
         image_embeddings = self.image_encoder(image_input)
         text_embeddings = self.text_encoder(text_input)
 
-        sim_matrix = self.compute_similarities(image_embeddings, text_embeddings)
+        norm_img_embeddings = tf.nn.l2_normalize(image_embeddings, axis=-1)
+        norm_txt_embeddings = tf.nn.l2_normalize(text_embeddings, axis=-1)
 
-        return sim_matrix
+        logits_per_image = tf.matmul(norm_img_embeddings, norm_txt_embeddings, transpose_b=True) * self.temperature
+        logits_per_text = tf.transpose(logits_per_image)
+
+        if ret_np:
+            return logits_per_image.numpy(), logits_per_text.numpy()
+
+        return logits_per_image, logits_per_text
+
+    def call(self, inputs):
+        image_input, text_input = inputs
+
+        return self.infer(image_input, text_input)

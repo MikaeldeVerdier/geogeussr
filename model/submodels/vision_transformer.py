@@ -15,7 +15,6 @@ class VisionTransformer(Model):
         self.transformer_blocks = [
             TransformerBlock(embed_dim, num_heads, ff_dim) for _ in range(num_layers)
         ]
-        self.layernorm = layers.UnitNormalization()
         # self.mlp_head = tf.keras.Sequential([
         #     layers.LayerNormalization(epsilon=1e-6),
         #     layers.Dense(num_classes, activation="softmax"),
@@ -48,9 +47,7 @@ class VisionTransformer(Model):
         for block in self.transformer_blocks:
             tokens = block(tokens)
 
-        x = self.layernorm(tokens)
-
-        return x[:, 0]
+        return tokens[:, 0]
 
         # class_representation = tokens[:, 0]
 

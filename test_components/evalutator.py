@@ -21,7 +21,7 @@ class Evaluator:
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions)
         for _ in range(test_cfg.iteration_amount):
             (image_input, text_input), _ = next(generator)
-            logits_per_image, logits_per_text = model.infer(image_input, toknized_prompts, ret_np=True)
+            logits_per_image = model.infer(image_input, toknized_prompts, ret_np=True)
             text_gt = self.dataset_handler.tokenizer.decode_texts(text_input)
 
             # similarities = model.compute_similarities(embedded_images, embedded_texts).numpy()

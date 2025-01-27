@@ -24,12 +24,11 @@ class GeoCLIP(Model):
         norm_txt_embeddings = tf.nn.l2_normalize(text_embeddings, axis=-1)
 
         logits_per_image = tf.matmul(norm_img_embeddings, norm_txt_embeddings, transpose_b=True) * self.temperature
-        logits_per_text = tf.transpose(logits_per_image)
 
         if ret_np:
-            return logits_per_image.numpy(), logits_per_text.numpy()
+            return logits_per_image.numpy()
 
-        return logits_per_image, logits_per_text
+        return logits_per_image
 
     def call(self, inputs):
         image_input, text_input = inputs

@@ -81,7 +81,7 @@ class DatasetHandler:
             output_signature=(
                 (
                     tf.TensorSpec(shape=(used_batch_size,) + image_shape, dtype=tf.float32),
-                    tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.float32)
+                    tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.int32)
                 ),
                 tf.TensorSpec(shape=(used_batch_size,))  # y_true - doesn't matter (needs to have batch_size as first dimension though, (in some versions))
             )
@@ -102,7 +102,7 @@ class DatasetHandler:
     def decode_predictions_com(self, logits_per_image, tokenized_labels):  # weird for these two to be different in args and rets
         decoded_texts = []
         for batch_sim in logits_per_image:
-            norm_batch_sim = (batch_sim + 1) / 2  # needed? neg sims can't be allowed?
+            norm_batch_sim = (batch_sim + 1) / 2  # normalizes to range [0, 1]. needed? neg sims can't be allowed?
 
             total_weighted_lats = 0
             total_weighted_lngs = 0

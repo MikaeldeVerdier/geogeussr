@@ -23,10 +23,24 @@ class Tokenizer:
     def decode_texts(self, encoded_texts):
         texts = []
         for encoded_text in encoded_texts:
-            country = self.regions[int(encoded_text[0])] if encoded_text[0] != -1 else "Unknown"
+            country = self.regions[int(encoded_text[0] - 3600)] if encoded_text[0] != -1 else "Unknown"
             latitude = encoded_text[1] / 10
             longitude = encoded_text[1] / 10
 
             texts.append(f"{country}, latitude {latitude}, longitude {longitude}")
 
         return np.array(texts)
+
+    def get_components(self, texts):
+        regions = []
+        lat_lngs = []
+        for text in texts:
+            components = text.split(", ")
+            region = components[0]
+            latitude = float(components[1].split(" ")[1])
+            longitude = float(components[2].split(" ")[1])
+
+            regions.append(region)
+            lat_lngs.append([latitude, longitude])
+
+        return regions, lat_lngs

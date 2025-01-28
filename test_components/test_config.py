@@ -9,6 +9,7 @@ tokens_len = max_len
 # Testing config
 regions = COUNTRIES
 used_regions = None
+region_translations = COUNTRY_TRANSLATIONS
 region_origins = COUNTRY_ORIGINGS
 dataset_path = "data/datasets/dataset10"
 iteration_amount = 10

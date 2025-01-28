@@ -4,8 +4,8 @@ import test_components.test_config as test_cfg
 from shared_components.dataset_handler import DatasetHandler
 
 class Evaluator:
-    def __init__(self):
-        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions)
+    def __init__(self, tokenizer_method="Geo"):
+        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, test_cfg.region_translations, test_cfg.region_origins, tokenizer_method)
 
     def get_prompts(self):
         locations = [{"country": region, "lat": region_origin[1], "lng": region_origin[0]} for region, region_origin in zip(test_cfg.regions, test_cfg.region_origins)]
@@ -27,18 +27,18 @@ class Evaluator:
         return distance
 
     def evaluate_result(self, pred, gt):
-        comp_pred = self.dataset_handler.tokenizer.get_components([pred])
-        comp_gt = self.dataset_handler.tokenizer.get_components([gt])
+        comp_pred = self.dataset_handler.tokenizer.get_components([pred])[0]
+        comp_gt = self.dataset_handler.tokenizer.get_components([gt])[0]
         
         correct_region = comp_pred[0] == comp_gt[0]
 
         R = 6371.0  # Earth's radius in km
-        lat1, lng1, lat2, lng2 = map(radians, comp_pred[1][0] + comp_gt[1][0])
+        lat1, lng1, lat2, lng2 = map(radians, comp_pred[1:] + comp_gt[1:])
         distance = self.great_circle_distance(lat1, lng1, lat2, lng2, r=R)  # (km)
 
         return correct_region, distance
 
-    def evaluate(self, model):
+    def evaluate(self, model, use_com=False):
         prompts = self.get_prompts()
         toknized_prompts = self.dataset_handler.tokenizer.encode_texts(prompts)
         # embedded_texts = model.text_encoder.predict(toknized_prompts)
@@ -47,19 +47,21 @@ class Evaluator:
         distance_results = []
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions)
         for _ in range(test_cfg.iteration_amount):
-            (image_input, text_input), _ = next(generator)
+            (image_input, text_input), gt = next(generator)
             logits_per_image = model.infer(image_input, toknized_prompts, ret_np=True)
-            text_gt = self.dataset_handler.tokenizer.decode_texts(text_input)
+            # text_gt = self.dataset_handler.tokenizer.decode_texts(text_input)
 
             # similarities = model.compute_similarities(embedded_images, embedded_texts).numpy()
-            best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
-            best_prompt_com = self.dataset_handler.decode_predictions_com(logits_per_image, toknized_prompts)
+            if not use_com:
+                best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
+                print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
+            else:
+                best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, prompts)
+                print(f"Model guessed (CoM): {best_prompt}")  # center-of-mass
 
-            print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
-            # print(f"Model guessed (CoM): {best_prompt_com}")  # center-of-mass
-            print(f"Correct answer: {text_gt}")
+            print(f"Correct answer: {gt}")
 
-            correct_region, distance = self.evaluate_result(best_prompt[0], text_gt[0])
+            correct_region, distance = self.evaluate_result(best_prompt[0], gt[0])
             region_results.append(correct_region)
             distance_results.append(distance)
 
@@ -71,4 +73,4 @@ class Evaluator:
         region_accuracy = sum(map(int, region_results)) / len(region_results)
         mean_distance = sum(distance_results) / len(distance_results)
         print(f"Country was correct {region_accuracy * 100:}% of the time.")
-        print(f"Average distance was {mean_distance:2f}km.")
+        print(f"Average distance was {mean_distance:.2f}km.")

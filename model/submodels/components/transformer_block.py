@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras import layers
+from keras import layers, Sequential
 
 from model.submodels.components.multi_head_self_attention import MultiHeadSelfAttention
 
@@ -8,7 +8,7 @@ class TransformerBlock(layers.Layer):
         super(TransformerBlock, self).__init__(**kwargs)
 
         self.att = MultiHeadSelfAttention(embed_dim, num_heads)
-        self.ffn = tf.keras.Sequential([
+        self.ffn = Sequential([
             layers.Dense(ff_dim, activation="relu"),
             layers.Dense(embed_dim),
         ])

@@ -1,4 +1,4 @@
-from model.model import GeoCLIP
+from model.geo_clip import GeoCLIP
 from train_components.trainer import Trainer
 
 if __name__ == "__main__":

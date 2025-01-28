@@ -1,7 +1,7 @@
 import numpy as np
 
-class Tokenizer:
-    def __init__(self, regions):
+class GeoTokenizer:
+    def __init__(self, regions, *args):
         self.regions = regions
 
     def encode_texts(self, texts):
@@ -31,16 +31,16 @@ class Tokenizer:
 
         return np.array(texts)
 
-    def get_components(self, texts):
-        regions = []
-        lat_lngs = []
+    def get_components(self, texts):  # format is so inconsistent throughout this class...
+        # regions = []
+        components = []
         for text in texts:
-            components = text.split(", ")
-            region = components[0]
-            latitude = float(components[1].split(" ")[1])
-            longitude = float(components[2].split(" ")[1])
+            text_comps = text.split(", ")
+            region = text_comps[0]
+            latitude = float(text_comps[1].split(" ")[1])
+            longitude = float(text_comps[2].split(" ")[1])
 
-            regions.append(region)
-            lat_lngs.append([latitude, longitude])
+            # regions.append(region)
+            components.append([region, latitude, longitude])
 
-        return regions, lat_lngs
+        return components

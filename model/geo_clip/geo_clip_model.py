@@ -7,12 +7,16 @@ import model.geo_clip.submodels.configs.vit_config as vit_cfg
 import model.geo_clip.submodels.configs.ttt_config as ttt_cfg
 from model.geo_clip.submodels.vision_transformer import VisionTransformer
 from model.geo_clip.submodels.text_transformer import TextTransformer
+from model.geo_clip.submodels.modified_resnet import ModifiedResnet
 
 class GeoCLIP(Model):
-    def __init__(self, **kwargs):
+    def __init__(self, image_encoder="vit", **kwargs):
         super(GeoCLIP, self).__init__(**kwargs)
 
-        self.image_encoder = VisionTransformer(vit_cfg.patch_size, vit_cfg.num_patches, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
+        if image_encoder == "resnet":
+            self.image_encoder = ModifiedResnet(shr_cfg.embed_dim)
+        else:
+            self.image_encoder = VisionTransformer(vit_cfg.patch_size, vit_cfg.num_patches, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
         self.text_encoder = TextTransformer(ttt_cfg.vocab_size, ttt_cfg.max_len, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
 
         self.temperature = tf.Variable(initial_value=1.0, trainable=True, name="temperature", dtype=tf.float32)

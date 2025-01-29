@@ -4,8 +4,8 @@ from tf_keras import layers, Model
 from model.geo_clip.submodels.components.transformer_block import TransformerBlock
 
 class VisionTransformer(Model):
-    def __init__(self, patch_size, num_patches, embed_dim, num_heads, ff_dim, num_layers):  # , num_classes):
-        super(VisionTransformer, self).__init__()
+    def __init__(self, patch_size, num_patches, embed_dim, num_heads, ff_dim, num_layers, **kwargs):  # , num_classes):
+        super(VisionTransformer, self).__init__(**kwargs)
 
         self.patch_size = patch_size
         self.num_patches = num_patches

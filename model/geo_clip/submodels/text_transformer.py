@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras import layers, Model
+from tf_keras import layers, Model
 
-from model.submodels.components.transformer_block import TransformerBlock
+from model.geo_clip.submodels.components.transformer_block import TransformerBlock
 
 class TextTransformer(Model):
     def __init__(self, vocab_size, max_len, embed_dim, num_heads, ff_dim, num_layers):

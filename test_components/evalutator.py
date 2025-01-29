@@ -4,14 +4,21 @@ import test_components.test_config as test_cfg
 from shared_components.dataset_handler import DatasetHandler
 
 class Evaluator:
-    def __init__(self, tokenizer_method="Geo"):
-        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, test_cfg.region_translations, test_cfg.region_origins, tokenizer_method)
+    def __init__(self, processor_method="Geo"):
+        processor_kwargs = {
+            "iamge_size": test_cfg.image_size,
+            "max_len": test_cfg.max_len,
+            "region_translations": test_cfg.region_translations,
+            "region_origins": test_cfg.region_origins
+        }
+
+        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
 
     def get_prompts(self):
         locations = [{"country": region, "lat": region_origin[1], "lng": region_origin[0]} for region, region_origin in zip(test_cfg.regions, test_cfg.region_origins)]
         prompts = []
         for location in locations:
-            prompts.append(self.dataset_handler.generate_description(location))
+            prompts.append(self.dataset_handler.preprocessor.generate_description(location))
 
         return prompts
 
@@ -27,8 +34,8 @@ class Evaluator:
         return distance
 
     def evaluate_result(self, pred, gt):
-        comp_pred = self.dataset_handler.tokenizer.get_components([pred])[0]
-        comp_gt = self.dataset_handler.tokenizer.get_components([gt])[0]
+        comp_pred = self.dataset_handler.preprocessor.get_components([pred])[0]
+        comp_gt = self.dataset_handler.preprocessor.get_components([gt])[0]
         
         correct_region = comp_pred[0] == comp_gt[0]
 
@@ -40,18 +47,17 @@ class Evaluator:
 
     def evaluate(self, model, use_com=False):
         prompts = self.get_prompts()
-        toknized_prompts = self.dataset_handler.tokenizer.encode_texts(prompts)
-        # embedded_texts = model.text_encoder.predict(toknized_prompts)
+        process_kwargs = {
+            "passed_prompts": prompts
+        }
 
         region_results = []
         distance_results = []
-        generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions)
+        generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(test_cfg.iteration_amount):
-            (image_input, text_input), gt = next(generator)
-            logits_per_image = model.infer(image_input, toknized_prompts, ret_np=True)
-            # text_gt = self.dataset_handler.tokenizer.decode_texts(text_input)
+            inputs, gt = next(generator)
+            logits_per_image = model(inputs, ret_np=True)
 
-            # similarities = model.compute_similarities(embedded_images, embedded_texts).numpy()
             if not use_com:
                 best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
                 print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")

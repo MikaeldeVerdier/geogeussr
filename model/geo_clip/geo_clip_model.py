@@ -1,11 +1,12 @@
 import tensorflow as tf
-from keras.models import Model
+from tf_keras.models import Model
+# from tf_keras import Variable
 
-import model.submodels.configs.shared_config as shr_cfg
-import model.submodels.configs.vit_config as vit_cfg
-import model.submodels.configs.ttt_config as ttt_cfg
-from model.submodels.vision_transformer import VisionTransformer
-from model.submodels.text_transformer import TextTransformer
+import model.geo_clip.submodels.configs.shared_config as shr_cfg
+import model.geo_clip.submodels.configs.vit_config as vit_cfg
+import model.geo_clip.submodels.configs.ttt_config as ttt_cfg
+from model.geo_clip.submodels.vision_transformer import VisionTransformer
+from model.geo_clip.submodels.text_transformer import TextTransformer
 
 class GeoCLIP(Model):
     def __init__(self, **kwargs):
@@ -14,7 +15,8 @@ class GeoCLIP(Model):
         self.image_encoder = VisionTransformer(vit_cfg.patch_size, vit_cfg.num_patches, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
         self.text_encoder = TextTransformer(ttt_cfg.vocab_size, ttt_cfg.max_len, shr_cfg.embed_dim, shr_cfg.num_heads, shr_cfg.ff_dim, shr_cfg.num_layers)
 
-        self.temperature = tf.Variable(initial_value=1.0, trainable=True, dtype=tf.float32)
+        self.temperature = tf.Variable(initial_value=1.0, trainable=True, name="temperature", dtype=tf.float32)
+        # self.temperature = self.add_weight(name="temperature", shape=(), initializer="ones")
 
     def infer(self, image_input, text_input, ret_np=False):
         image_embeddings = self.image_encoder(image_input)
@@ -30,7 +32,7 @@ class GeoCLIP(Model):
 
         return logits_per_image
 
-    def call(self, inputs):
+    def call(self, inputs, ret_np=False):
         image_input, text_input = inputs
 
-        return self.infer(image_input, text_input)
+        return self.infer(image_input, text_input, ret_np=ret_np)

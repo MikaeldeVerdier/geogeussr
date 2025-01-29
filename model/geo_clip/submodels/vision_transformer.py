@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras import layers, Model
+from tf_keras import layers, Model
 
-from model.submodels.components.transformer_block import TransformerBlock
+from model.geo_clip.submodels.components.transformer_block import TransformerBlock
 
 class VisionTransformer(Model):
     def __init__(self, patch_size, num_patches, embed_dim, num_heads, ff_dim, num_layers):  # , num_classes):

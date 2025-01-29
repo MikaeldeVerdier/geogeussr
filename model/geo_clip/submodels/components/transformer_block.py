@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras import layers, Sequential
+from tf_keras import layers, Sequential
 
-from model.submodels.components.multi_head_self_attention import MultiHeadSelfAttention
+from model.geo_clip.submodels.components.multi_head_self_attention import MultiHeadSelfAttention
 
 class TransformerBlock(layers.Layer):
     def __init__(self, embed_dim, num_heads, ff_dim, dropout_rate=0.1, **kwargs):

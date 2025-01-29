@@ -1,47 +1,31 @@
-import os
 import numpy as np
 import random
-import cv2
 import tensorflow as tf
 from tensorflow.data import Dataset
 
-from shared_components.geo_tokenizer import GeoTokenizer
-from shared_components.street_tokenizer import StreetTokenizer
+from model.geo_clip.geo_preprocessor import GeoPreprocessor
+from model.street_clip.street_preprocessor_original import StreetPreprocessorOriginal
+from model.street_clip.street_preprocessor import StreetPreprocessor
 from shared_components.files import load_annotations
 
 class DatasetHandler:
-    def __init__(self, dataset_path, split, batch_size, regions, region_translations=None, region_origins=None, tokenizer_method="Geo"):
+    def __init__(self, dataset_path, split, batch_size, regions, processor_method="Geo", processor_kwargs={}):
         self.dataset_path = dataset_path
         self.batch_size = batch_size
         self.regions = regions
 
-        if tokenizer_method == "Geo":
-            self.tokenizer = GeoTokenizer(regions)
+        if processor_method == "Street":
+            self.preprocessor = StreetPreprocessor(dataset_path, regions, **processor_kwargs)
+        elif processor_method == "StreetOG":
+            self.preprocessor = StreetPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
         else:
-            self.tokenizer = StreetTokenizer(regions, region_translations, region_origins)
+            self.preprocessor = GeoPreprocessor(dataset_path, regions, **processor_kwargs)
 
         loaded_annotations = load_annotations(dataset_path)
         share = int(len(loaded_annotations) * split)
 
         self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
         self.unique_regions, self.annotation_counts = np.unique([annotation["location"]["country"] for annotation in self.annotations], return_counts=True)
-
-    def encode_image(self, image_name, input_shape):
-        image_path = os.path.join(self.dataset_path, image_name)
-
-        img = cv2.imread(image_path)
-        img = cv2.resize(img, input_shape[:-1])
-
-        return img / 255.0
-
-    def generate_description(self, location):
-        return f"{location['country']}, latitude {location['lat']}, longitude {location['lng']}"
-
-    def encode_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
-        description = self.generate_description(location)
-        tokenized_description = self.tokenizer.encode_texts([description])[0]
-
-        return tokenized_description
 
     def get_region_annotations(self, region_names):
         if region_names is not None:
@@ -55,27 +39,33 @@ class DatasetHandler:
 
         return region_annotations
 
-    def create_generator(self, image_shape, region_names):
+    def create_generator(self, image_shape, region_names, processor_kwargs={}):
         while True:
             region_annotations = self.get_region_annotations(region_names)
             chosen_annotations = random.sample(region_annotations, min(self.batch_size, len(region_annotations)))
 
-            x1_batch = []
-            x2_batch = []
-            y_batch = []
-            for annotation in chosen_annotations:
-                x1 = self.encode_image(annotation["image_name"], image_shape)
-                x1_batch.append(x1)
+            yield self.preprocessor(chosen_annotations, image_shape, **processor_kwargs)
 
-                x2 = self.encode_location(annotation["location"])
-                x2_batch.append(x2)
+    def create_tensor_spec(self, shape, dtype):
+        dtype_map = {
+            int: tf.int32,
+            float: tf.float32,
+            bool: tf.bool,
+            str: tf.string,
+            bytes: tf.string
+        }
 
-                y = self.generate_description(annotation["location"])
-                y_batch.append(y)
+        return tf.TensorSpec(shape=(None,) + shape, dtype=dtype_map[dtype])
 
-            yield (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
+    def get_output_signature(self, output_shapes):
+        if isinstance(output_shapes, list):
+            return [self.create_tensor_spec(v, d) for v, d in output_shapes]
+        elif isinstance(output_shapes, tuple):
+            return tuple(self.get_output_signature(list(output_shapes)))
+        elif isinstance(output_shapes, dict):
+            return {k: self.create_tensor_spec(v, d) for k, (v, d) in output_shapes.items()} 
 
-    def create_dataset(self, image_shape, max_tokens, region_names):
+    def create_dataset(self, image_shape, region_names, processor_kwargs={}):
         region_annotations = self.get_region_annotations(region_names)  # unecessarily calculated independently twice
         used_batch_size = min(self.batch_size, len(region_annotations))
         if used_batch_size == 0:
@@ -83,23 +73,25 @@ class DatasetHandler:
         
         # return self.create_generator(image_size, preprocess_function, region_name, y_index)
 
-        generator = lambda: self.create_generator(image_shape, region_names)  # why does this need to be lambda-wrapped (wrapped at all)?
+        generator = lambda: self.create_generator(image_shape, region_names, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
+        output_signature = self.get_output_signature(self.preprocessor.output_shapes)
         dataset = Dataset.from_generator(
             generator,
             output_signature=(
-                (
-                    tf.TensorSpec(shape=(used_batch_size,) + image_shape, dtype=tf.float32),
-                    tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.int32)
-                ),
-                tf.TensorSpec(shape=(used_batch_size,))  # y_true - doesn't matter (needs to have batch_size as first dimension though, (in some versions))
+                # (
+                #     tf.TensorSpec(shape=(used_batch_size,) + image_shape, dtype=tf.float32),
+                #     tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.int32)
+                # ),
+                output_signature,
+                tf.TensorSpec(shape=(used_batch_size,), dtype=tf.string)  # y_true - doesn't matter (needs to have batch_size as first dimension though, (in some versions))
             )
         )
 
         return dataset
 
     def softmax(self, distribution):
-        exp_distribution = np.exp(distribution)
-        softmax_distribution = exp_distribution / np.sum(exp_distribution, axis=-1)
+        exp_distribution = np.exp(distribution - np.max(distribution))
+        softmax_distribution = exp_distribution / np.sum(exp_distribution, axis=-1, keepdims=True)
 
         return softmax_distribution
 
@@ -122,7 +114,7 @@ class DatasetHandler:
             total_weighted_lngs = 0
             total_weight = 0
             for similarity, prompt in zip(norm_batch_sim, prompts):
-                components = self.tokenizer.get_components([prompt])[0]
+                components = self.preprocessor.get_components([prompt])[0]
 
                 total_weighted_lats += components[1] * similarity
                 total_weighted_lngs += components[2] * similarity
@@ -132,8 +124,8 @@ class DatasetHandler:
             avg_longitude = total_weighted_lngs / total_weight
 
             best_prompt = np.array(prompts)[np.argmax(batch_sim)]
-            best_prompt_region = self.tokenizer.get_components([best_prompt])[0][0]
+            best_prompt_region = self.preprocessor.get_components([best_prompt])[0][0]
             encoded_text = {"country": best_prompt_region, "lat": avg_latitude, "lng": avg_longitude}
-            decoded_texts.append(self.generate_description(encoded_text))
+            decoded_texts.append(self.preprocessor.generate_description(encoded_text))
 
         return decoded_texts

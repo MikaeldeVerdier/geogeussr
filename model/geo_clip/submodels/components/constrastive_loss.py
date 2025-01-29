@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras.losses import Loss, sparse_categorical_crossentropy
+from tf_keras.losses import Loss, sparse_categorical_crossentropy
 
 class ContrastiveLoss(Loss):
     def __init__(self, **kwargs):

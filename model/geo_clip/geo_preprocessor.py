@@ -59,8 +59,8 @@ class GeoPreprocessor:
             longitude = float(components[2].split(" ")[1])
 
             country_idx = self.regions.index(country) + 3600
-            encoded_lat = np.round(latitude + 90, 1) * 10  # in the range [0, 1800]
-            encoded_lng = np.round(longitude + 180, 1) * 10  # in the range [0, 3600]
+            encoded_lat = np.round(latitude + 90 * 10, 1)  # in the range [0, 1800]
+            encoded_lng = np.round(longitude + 180 * 10, 1)  # in the range [0, 3600]
 
             encoded_texts.append([country_idx, encoded_lat, encoded_lng])
 

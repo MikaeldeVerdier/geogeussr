@@ -1,5 +1,6 @@
 from model.geo_clip.geo_clip_model import GeoCLIP
 from model.street_clip.street_clip_model import StreetCLIP
+from model.clip_clip.clip_clip_model import ClipCLIP
 from train_components.trainer import Trainer
 
 if __name__ == "__main__":
@@ -21,3 +22,14 @@ if __name__ == "__main__":
 
     # trainer.train(street_clip)
 
+    # # Fine-tune a ClipCLIP model with new prompt format
+    # clip_clip = ClipCLIP()
+    # trainer = Trainer(processor_method="Clip")
+
+    # trainer.train(clip_clip)
+
+    # # Fine-tune a ClipCLIP model with original prompt format
+    # clip_clip = ClipCLIP()
+    # trainer = Trainer(processor_method="ClipOG")
+
+    # trainer.train(clip_clip)

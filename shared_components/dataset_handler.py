@@ -4,8 +4,10 @@ import tensorflow as tf
 from tensorflow.data import Dataset
 
 from model.geo_clip.geo_preprocessor import GeoPreprocessor
-from model.street_clip.street_preprocessor_original import StreetPreprocessorOriginal
 from model.street_clip.street_preprocessor import StreetPreprocessor
+from model.street_clip.street_preprocessor_original import StreetPreprocessorOriginal
+from model.clip_clip.clip_preprocessor import ClipPreprocessor
+from model.clip_clip.clip_preprocessor_original import ClipPreprocessorOriginal
 from shared_components.files import load_annotations
 
 class DatasetHandler:
@@ -18,6 +20,10 @@ class DatasetHandler:
             self.preprocessor = StreetPreprocessor(dataset_path, regions, **processor_kwargs)
         elif processor_method == "StreetOG":
             self.preprocessor = StreetPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
+        if processor_method == "Clip":
+            self.preprocessor = ClipPreprocessor(dataset_path, regions, **processor_kwargs)
+        elif processor_method == "ClipOG":
+            self.preprocessor = ClipPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
         else:
             self.preprocessor = GeoPreprocessor(dataset_path, regions, **processor_kwargs)
 

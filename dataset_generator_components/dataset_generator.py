@@ -1,7 +1,7 @@
 import os
 
 from shared_components.files import save_annotations, load_annotations
-from image_fetcher import ImageFetcher
+from dataset_generator_components.image_fetcher import ImageFetcher
 
 class DatasetGenerator:
     def __init__(self, shapefile_path, api_key, location_tolerance, secret=None, generator_method="scrape", load_dataset_path=None):

@@ -4,7 +4,7 @@ API_KEY = "API_KEY"  # str
 SECRET = None  # str | None
 
 SHAPEFILE_PATH = "data/gadm_410.gpkg"  # str
-DATASET_DIR = "datasets/dataset"  # str
+DATASET_DIR = "data/datasets/dataset"  # str
 AMOUNT_IMAGES = 100  # int
 IMAGE_SIZE = (640, 640)  # (int int)
 LOCATION_TOLERANCE = 5000  # int  # The maximum distance (in meters) from a random point allowed. Smaller -> more uniform distribution, longer generation time; Larger -> less uniform distribution, shorter generation time

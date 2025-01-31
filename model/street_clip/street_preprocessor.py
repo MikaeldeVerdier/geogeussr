@@ -43,8 +43,10 @@ class StreetPreprocessor:
         return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
     def process(self, image_input, text_input):
-        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="tf", padding=True, do_rescale=False)
+        processed = self.clip_processor(text=list(text_input), images=image_input, return_tensors="tf", padding=True, do_rescale=False)
         processed_data = processed.data
+        # processed_data["input_ids"] = np.pad(processed_data["input_ids"], ((0, 0), (0, 100 - processed_data["input_ids"].shape[1])))
+        # processed_data["attention_mask"] = np.pad(processed_data["attention_mask"], ((0, 0), (0, 100 - processed_data["attention_mask"].shape[1])))
 
         return processed_data
 

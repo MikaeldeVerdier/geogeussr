@@ -24,9 +24,9 @@ class Trainer:
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 
-    def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2):
+    def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2, weight_decay):
         schedule = ExponentialDecay(initial_lr, decay_steps, decay_factor, staircase=True)
-        optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2)
+        optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2, weight_decay=weight_decay)
 
         return optimizer
 
@@ -38,7 +38,7 @@ class Trainer:
         return model_checkpoint_callback
 
     def train(self, model, load=False, name="GeoCLIP"):
-        optimizer = self.build_optimizer(train_cfg.initial_learning_rate, train_cfg.decay_steps, train_cfg.decay_factor, train_cfg.beta_1, train_cfg.beta_2)
+        optimizer = self.build_optimizer(train_cfg.initial_learning_rate, train_cfg.decay_steps, train_cfg.decay_factor, train_cfg.beta_1, train_cfg.beta_2, train_cfg.weight_decay)
         model.compile(optimizer=optimizer, loss=ContrastiveLoss())
 
         save_interval = int(train_cfg.iteration_amount * train_cfg.save_ratio)

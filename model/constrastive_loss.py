@@ -9,7 +9,7 @@ class ContrastiveLoss(Loss):
         # logits_per_image, logits_per_text = y_pred
 
         logits_per_image = y_pred  # why does only logits_per_image get passed?
-        logits_per_text = tf.transpose(y_pred)
+        logits_per_text = tf.transpose(logits_per_image)
 
         batch_size = tf.shape(logits_per_image)[0]
         labels = tf.range(batch_size)

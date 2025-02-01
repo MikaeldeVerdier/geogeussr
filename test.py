@@ -10,11 +10,13 @@ if __name__ == "__main__":
 
     evaluator.evaluate(geo_clip)
 
+
     # # Test a StreetCLIP model with new prompt format
     # street_clip = StreetCLIP()
     # evaluator = Evaluator(processor_method="Street")
 
     # evaluator.evaluate(street_clip)
+
 
     # # Test a StreetCLIP model with original prompt format
     # street_clip = StreetCLIP()
@@ -22,11 +24,13 @@ if __name__ == "__main__":
 
     # evaluator.evaluate(street_clip)
 
+
     # # Test a ClipCLIP model with new prompt format
     # clip_clip = ClipCLIP()
     # evaluator = Evaluator(processor_method="Clip")
 
     # evaluator.evaluate(clip_clip)
+
 
     # # Test a ClipCLIP model with original prompt format
     # clip_clip = ClipCLIP()

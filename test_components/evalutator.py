@@ -51,12 +51,13 @@ class Evaluator:
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(test_cfg.iteration_amount):
             inputs, gt = next(generator)
+            used_prompts = prompts
 
             for refinement_level in range(test_cfg.refinement_steps + 1):
                 logits_per_image = model(inputs, ret_np=True)
 
                 if not use_com:
-                    best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
+                    best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, used_prompts)
                     print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
                 else:
                     best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, prompts)
@@ -66,8 +67,8 @@ class Evaluator:
                     continue  # don't need to do the last ones
 
                 img = self.dataset_handler.preprocessor.find_image(inputs)
-                prompts = self.dataset_handler.preprocessor.get_refinement_prompts(best_prompt[0], refinement_amount=refinement_level)
-                inputs, _ = self.dataset_handler.preprocessor([], test_cfg.image_size, passed_processed_images=img, passed_prompts=prompts)
+                used_prompts = self.dataset_handler.preprocessor.get_refinement_prompts(best_prompt[0], refinement_amount=refinement_level)
+                inputs, _ = self.dataset_handler.preprocessor([], test_cfg.image_size, passed_processed_images=img, passed_prompts=used_prompts)
 
             print(f"Correct answer: {gt}")
 

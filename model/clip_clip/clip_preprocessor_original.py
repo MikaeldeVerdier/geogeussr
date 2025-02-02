@@ -95,5 +95,8 @@ class ClipPreprocessorOriginal(Preprocessor):
         return np.array(texts)
     """
 
+    def get_refinement_prompts(self, best_prompt, refinement_amount):
+        return self.get_refinement_prompts_city(best_prompt, refinement_amount)
+
     def find_image(self, inputs):
         return inputs["pixel_values"]

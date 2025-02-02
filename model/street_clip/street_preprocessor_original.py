@@ -78,7 +78,7 @@ class StreetPreprocessorOriginal(Preprocessor):
         encoded_texts = []
         for text in texts:
             components = text.split(", ")
-            country = self.region_translations[components[0]]
+            country = self.region_translations.get(components[0], components[0])
 
             encoded_texts.append(country)
 
@@ -96,6 +96,9 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         return np.array(texts)
     """
+
+    def get_refinement_prompts(self, best_prompt, refinement_amount):
+        return self.get_refinement_prompts_city(best_prompt, refinement_amount)
 
     def find_image(self, inputs):
         return inputs["pixel_values"]

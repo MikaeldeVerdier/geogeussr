@@ -39,7 +39,7 @@ class Preprocessor:
 
         return prompts
 
-    def get_refinement_prompts(self, best_prompt, refinement_amount):
+    def get_refinement_prompts_coords(self, best_prompt, refinement_amount):
         best_region, best_lat, best_lng = self.get_components([best_prompt])[0]
         best_region_idx = self.regions.index(best_region)
         best_region_box = self.region_boxes[best_region_idx]
@@ -51,8 +51,13 @@ class Preprocessor:
         used_width = width * refinement_factor
         used_height = height * refinement_factor
 
-        lngs = np.linspace(best_lng - used_width / 2, best_lng + used_width / 2, int(width) + 1)
-        lats = np.linspace(best_lat - used_height / 2, best_lat + used_height / 2, int(height) + 1)
+        lowest_lat = max(best_region_box[1], best_lat - used_height / 2)  # to avoid maxing and minning could change the country if outside of box (but would then have to load gadm)
+        highest_lat = min(best_region_box[3], best_lat + used_height / 2)
+        lowest_lng = max(best_region_box[0], best_lng - used_width / 2)
+        highest_lng = min(best_region_box[2], best_lng + used_width / 2)
+
+        lats = np.linspace(lowest_lat, highest_lat, int(height) + 1)  # more fine guesses if the coutnry is bigger
+        lngs = np.linspace(lowest_lng, highest_lng, int(width) + 1)
 
         locations = [
             {
@@ -67,3 +72,39 @@ class Preprocessor:
             prompts.append(self.generate_description(location))
 
         return prompts
+
+    """  # TODO: Implement this method
+    def get_refinement_prompts_city(self, best_prompt, refinement_amount):
+        best_region, best_lat, best_lng = self.get_components([best_prompt])[0]
+        best_region_idx = self.regions.index(best_region)
+        best_region_box = self.region_boxes[best_region_idx]
+
+        width = best_region_box[2] - best_region_box[0]
+        height = best_region_box[3] - best_region_box[1]
+
+        refinement_factor = self.refinement_base ** refinement_amount
+        used_width = width * refinement_factor
+        used_height = height * refinement_factor
+
+        lowest_lat = max(best_region_box[1], best_lat - used_height / 2)  # to avoid maxing and minning could change the country if outside of box (but would then have to load gadm)
+        highest_lat = min(best_region_box[3], best_lat + used_height / 2)
+        lowest_lng = max(best_region_box[0], best_lng - used_width / 2)
+        highest_lng = min(best_region_box[2], best_lng + used_width / 2)
+
+        lats = np.linspace(lowest_lat, highest_lat, int(height) + 1)  # more fine guesses if the coutnry is bigger
+        lngs = np.linspace(lowest_lng, highest_lng, int(width) + 1)
+
+        locations = [
+            {
+                "country": best_region,
+                "lat": lat,
+                "lng": lng
+            }
+            for lng in lngs for lat in lats
+        ]
+        prompts = []
+        for location in locations:
+            prompts.append(self.generate_description(location))
+
+        return prompts
+    """

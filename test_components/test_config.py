@@ -8,9 +8,9 @@ tokens_len = max_len
 
 # Testing config
 regions = COUNTRIES
-used_regions = None
+used_regions = COUNTRIES
 region_translations = COUNTRY_TRANSLATIONS
-region_origins = COUNTRY_ORIGINGS
+region_origins = COUNTRY_ORIGINS
 region_boxes = COUNTRY_BOUNDING_BOXES
 refinement_base = 0.5
 refinement_steps = 2

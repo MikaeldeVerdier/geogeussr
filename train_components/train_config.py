@@ -8,9 +8,9 @@ tokens_len = max_len
 
 # Training config
 regions = COUNTRIES
-used_regions = None
+used_regions = COUNTRIES
 region_translations = COUNTRY_TRANSLATIONS
-region_origins = COUNTRY_ORIGINGS
+region_origins = COUNTRY_ORIGINS
 dataset_path = "data/datasets/dataset10"
 iteration_amount = 10
 batch_size = 8

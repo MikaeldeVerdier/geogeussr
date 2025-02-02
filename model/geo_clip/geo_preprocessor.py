@@ -83,5 +83,8 @@ class GeoPreprocessor(Preprocessor):
         return np.array(texts)
     """
 
+    def get_refinement_prompts(self, best_prompt, refinement_amount):
+        return self.get_refinement_prompts_coords(best_prompt, refinement_amount)
+
     def find_image(self, inputs):
         return inputs[0]

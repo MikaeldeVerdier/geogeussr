@@ -4,6 +4,7 @@
 
 *.gpkg
 *.pkl
+*.csv
 datasets/
 
 save_folder*/

@@ -55,16 +55,12 @@ class GeoPreprocessor(Preprocessor):
         return tokenized_description
 
     def encode_texts(self, texts):
+        componentss = self.get_components(texts)
         encoded_texts = []
-        for text in texts:
-            components = text.split(", ")
-            country = components[0]
-            latitude = float(components[1].split(" ")[1])
-            longitude = float(components[2].split(" ")[1])
-
-            country_idx = self.regions.index(country) + 3600
-            encoded_lat = np.round(latitude + 90 * 10, 1)  # in the range [0, 1800]
-            encoded_lng = np.round(longitude + 180 * 10, 1)  # in the range [0, 3600]
+        for components in componentss:
+            country_idx = self.regions.index(components[0]) + 3601
+            encoded_lat = int(np.round(components[1] + 90 * 10))  # in the range [0, 1800]
+            encoded_lng = int(np.round(components[2] + 180 * 10))  # in the range [0, 3600]
 
             encoded_texts.append([country_idx, encoded_lat, encoded_lng])
 

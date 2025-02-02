@@ -266,7 +266,7 @@ COUNTRIES = [
     "ZWE"
 ]
 
-# Source: https://gadm.org/maps.html (is for COUNTRY not GID_0)
+# Source: https://gadm.org/maps.html (is for COUNTRY not GID_0 so not all are translated)
 country_translations_path = "data/country_translations.json"
 with open(country_translations_path, "r") as f:
     COUNTRY_TRANSLATIONS = json.load(f)

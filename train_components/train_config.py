@@ -3,6 +3,7 @@ from model.geo_clip.submodels.configs.vit_config import input_shape
 from model.geo_clip.submodels.configs.ttt_config import max_len
 
 # Model config
+name = "GeoCLIP"
 image_size = input_shape
 tokens_len = max_len
 

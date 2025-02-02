@@ -50,7 +50,7 @@ class ClipPreprocessor(Preprocessor):
         return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
     def process(self, image_input, text_input):
-        processed = self.clip_processor(text=list(text_input), images=image_input, return_tensors="tf", padding=True, do_rescale=False)
+        processed = self.clip_processor(text=list(text_input), images=image_input, return_tensors="np", padding=True)
         processed_data = processed.data
         # processed_data["input_ids"] = np.pad(processed_data["input_ids"], ((0, 0), (0, 100 - processed_data["input_ids"].shape[1])))
         # processed_data["attention_mask"] = np.pad(processed_data["attention_mask"], ((0, 0), (0, 100 - processed_data["attention_mask"].shape[1])))
@@ -62,9 +62,8 @@ class ClipPreprocessor(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
-        scaled_img = img / 255.0
 
-        return scaled_img
+        return img
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)

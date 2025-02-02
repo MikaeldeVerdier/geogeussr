@@ -1,26 +1,33 @@
 import numpy as np
 
 class Preprocessor:
-    def __init__(self, regions, region_origins=[], region_boxes=[], refinement_base=0.1, **kwargs):
+    def __init__(self, regions, region_translations={}, region_origins=[], region_boxes=[], refinement_base=0.1, **kwargs):
         self.regions = regions
         self.region_origins = region_origins
+        self.region_translations = region_translations
         self.region_boxes = region_boxes
         self.refinement_base = refinement_base
 
+        self.inverse_region_translations = {v: k for k, v in region_translations.items()}
+
     def generate_description(self, location):  # should be on dataset_handler but it's needed here
-        return f"{location['country']}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}"
+        translated_region = self.region_translations.get(location['country'], location['country'])
+
+        return f"A Street View photo in {translated_region}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}"
 
     def get_components(self, texts):  # format is so inconsistent throughout this class...
         # regions = []
         components = []
         for text in texts:
             text_comps = text.split(", ")
-            region = text_comps[0]
+            region = text_comps[0].split("A Street View photo in ")[1]
+            untranslated_region = self.inverse_region_translations.get(region, region)
+
             latitude = float(text_comps[1].split(" ")[1])
             longitude = float(text_comps[2].split(" ")[1])
 
             # regions.append(region)
-            components.append([region, latitude, longitude])
+            components.append([untranslated_region, latitude, longitude])
 
         return components
 

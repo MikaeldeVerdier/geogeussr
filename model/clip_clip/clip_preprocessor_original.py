@@ -6,13 +6,13 @@ from transformers import CLIPProcessor
 from model.preprocessor import Preprocessor
 
 class ClipPreprocessorOriginal(Preprocessor):
-    def __init__(self, dataset_path, regions, region_translations=None, origins=None, image_size=(336, 336, 3), **kwargs):
+    def __init__(self, dataset_path, regions, image_size=(336, 336, 3), **kwargs):
+        super().__init__(regions, **kwargs)
+
         self.dataset_path = dataset_path
         self.regions = regions
-        self.region_translations = region_translations
-        self.origins = origins
-
-        self.inverse_region_translations = {v: k for k, v in region_translations.items()}
+        # self.region_translations = region_translations  # initialized in super
+        # self.origins = origins
 
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14-336")
 
@@ -52,7 +52,7 @@ class ClipPreprocessorOriginal(Preprocessor):
         return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
     def process(self, image_input, text_input):
-        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="tf", padding=True, do_rescale=False)
+        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="np", padding=True)
         processed_data = processed.data
 
         return processed_data
@@ -62,9 +62,8 @@ class ClipPreprocessorOriginal(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
-        scaled_img = img / 255.0
 
-        return scaled_img
+        return img
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
@@ -75,10 +74,9 @@ class ClipPreprocessorOriginal(Preprocessor):
     def encode_texts(self, texts):
         encoded_texts = []
         for text in texts:
-            components = text.split(", ")
-            country = self.region_translations[components[0]]
+            encoded_text = text.split(", ")[0]
 
-            encoded_texts.append(country)
+            encoded_texts.append(encoded_text)
 
         return encoded_texts
 

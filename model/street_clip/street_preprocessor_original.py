@@ -54,7 +54,7 @@ class StreetPreprocessorOriginal(Preprocessor):
         return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
     def process(self, image_input, text_input):
-        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="tf", padding=True, do_rescale=False)
+        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="np", padding=True)
         processed_data = processed.data
 
         return processed_data
@@ -64,9 +64,8 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
-        scaled_img = img / 255.0
 
-        return scaled_img
+        return img
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
@@ -77,10 +76,9 @@ class StreetPreprocessorOriginal(Preprocessor):
     def encode_texts(self, texts):
         encoded_texts = []
         for text in texts:
-            components = text.split(", ")
-            country = self.region_translations.get(components[0], components[0])
+            encoded_text = text.split(", ")[0]
 
-            encoded_texts.append(country)
+            encoded_texts.append(encoded_text)
 
         return encoded_texts
 

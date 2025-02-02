@@ -37,12 +37,12 @@ class Trainer:
 
         return model_checkpoint_callback
 
-    def train(self, model, load=False, name="GeoCLIP"):
+    def train(self, model, load=False):
         optimizer = self.build_optimizer(train_cfg.initial_learning_rate, train_cfg.decay_steps, train_cfg.decay_factor, train_cfg.beta_1, train_cfg.beta_2, train_cfg.weight_decay)
         model.compile(optimizer=optimizer, loss=ContrastiveLoss())
 
         save_interval = int(train_cfg.iteration_amount * train_cfg.save_ratio)
-        callback = self.create_checkpoint_callback(load, save_interval, name)
+        callback = self.create_checkpoint_callback(load, save_interval, train_cfg.name)
 
         start_iteration = callback.get_epoch()
         end_iteration = start_iteration + train_cfg.iteration_amount
@@ -50,7 +50,7 @@ class Trainer:
         train_dataset = self.train_dataset_handler.create_dataset(train_cfg.image_size, train_cfg.used_regions)
         validation_dataset = self.val_dataset_handler.create_dataset(train_cfg.image_size, train_cfg.used_regions)
 
-        print(f"Training {name} for {train_cfg.iteration_amount} iterations")
+        print(f"Training {train_cfg.name} for {train_cfg.iteration_amount} iterations")
         model.fit(
             train_dataset,
             epochs=end_iteration,

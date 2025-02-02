@@ -9,18 +9,12 @@ class Evaluator:
             "iamge_size": test_cfg.image_size,
             "max_len": test_cfg.max_len,
             "region_translations": test_cfg.region_translations,
-            "region_origins": test_cfg.region_origins
+            "region_origins": test_cfg.region_origins,
+            "region_boxes": test_cfg.region_boxes,
+            "refinement_base": test_cfg.refinement_base
         }
 
         self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
-
-    def get_prompts(self):
-        locations = [{"country": region, "lat": region_origin[1], "lng": region_origin[0]} for region, region_origin in zip(test_cfg.regions, test_cfg.region_origins)]
-        prompts = []
-        for location in locations:
-            prompts.append(self.dataset_handler.preprocessor.generate_description(location))
-
-        return prompts
 
     def great_circle_distance(self, lat1, lng1, lat2, lng2, r):
         dlat = lat2 - lat1
@@ -46,7 +40,8 @@ class Evaluator:
         return correct_region, distance
 
     def evaluate(self, model, use_com=False):
-        prompts = self.get_prompts()
+        # prompts = self.get_prompts()
+        prompts = self.dataset_handler.preprocessor.get_prompts()
         process_kwargs = {
             "passed_prompts": prompts
         }
@@ -56,14 +51,23 @@ class Evaluator:
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(test_cfg.iteration_amount):
             inputs, gt = next(generator)
-            logits_per_image = model(inputs, ret_np=True)
 
-            if not use_com:
-                best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
-                print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
-            else:
-                best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, prompts)
-                print(f"Model guessed (CoM): {best_prompt}")  # center-of-mass
+            for refinement_level in range(test_cfg.refinement_steps + 1):
+                logits_per_image = model(inputs, ret_np=True)
+
+                if not use_com:
+                    best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, prompts)
+                    print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
+                else:
+                    best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, prompts)
+                    print(f"Model guessed (CoM): {best_prompt}")  # center-of-mass
+
+                if refinement_level == test_cfg.refinement_steps:
+                    continue  # don't need to do the last ones
+
+                img = self.dataset_handler.preprocessor.find_image(inputs)
+                prompts = self.dataset_handler.preprocessor.get_refinement_prompts(best_prompt[0], refinement_amount=refinement_level)
+                inputs, _ = self.dataset_handler.preprocessor([], test_cfg.image_size, passed_processed_images=img, passed_prompts=prompts)
 
             print(f"Correct answer: {gt}")
 

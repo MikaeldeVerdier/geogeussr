@@ -3,8 +3,12 @@ import numpy as np
 import cv2
 from transformers import CLIPProcessor
 
-class StreetPreprocessorOriginal:
+from model.preprocessor import Preprocessor
+
+class StreetPreprocessorOriginal(Preprocessor):
     def __init__(self, dataset_path, regions, region_translations=None, origins=None, image_size=(336, 336, 3), **kwargs):
+        super().__init__(regions, **kwargs)
+
         self.dataset_path = dataset_path
         self.regions = regions
         self.region_translations = region_translations
@@ -21,14 +25,14 @@ class StreetPreprocessorOriginal:
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # could unify with other clip preprocessors
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
-        images = [] if passed_images is None else passed_images
+        images = [] if passed_processed_images is None else None
         locations = [] if passed_prompts is None else passed_prompts
         for annotation in chosen_annotations:
-            if passed_images is None:
+            if passed_processed_images is None:
                 image = self.get_image(annotation["image_name"], image_shape)
                 images.append(image)
 
@@ -43,6 +47,9 @@ class StreetPreprocessorOriginal:
             locations = self.encode_texts(locations)
 
         x_batch = self.process(images, locations)
+
+        if passed_processed_images is not None:
+            x_batch["pixel_values"] = passed_processed_images
 
         return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
@@ -60,9 +67,6 @@ class StreetPreprocessorOriginal:
         scaled_img = img / 255.0
 
         return scaled_img
-
-    def generate_description(self, location):
-        return f"{location['country']}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}"
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
@@ -93,16 +97,5 @@ class StreetPreprocessorOriginal:
         return np.array(texts)
     """
 
-    def get_components(self, texts):  # format is so inconsistent throughout this class...
-        # regions = []
-        components = []
-        for text in texts:
-            text_comps = text.split(", ")
-            region = text_comps[0]
-            latitude = float(text_comps[1].split(" ")[1])
-            longitude = float(text_comps[2].split(" ")[1])
-
-            # regions.append(region)
-            components.append([region, latitude, longitude])
-
-        return components
+    def find_image(self, inputs):
+        return inputs["pixel_values"]

@@ -20,7 +20,7 @@ class DatasetHandler:
             self.preprocessor = StreetPreprocessor(dataset_path, regions, **processor_kwargs)
         elif processor_method == "StreetOG":
             self.preprocessor = StreetPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
-        if processor_method == "Clip":
+        elif processor_method == "Clip":
             self.preprocessor = ClipPreprocessor(dataset_path, regions, **processor_kwargs)
         elif processor_method == "ClipOG":
             self.preprocessor = ClipPreprocessorOriginal(dataset_path, regions, **processor_kwargs)

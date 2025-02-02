@@ -2,8 +2,12 @@ import os
 import numpy as np
 import cv2
 
-class GeoPreprocessor:
+from model.preprocessor import Preprocessor
+
+class GeoPreprocessor(Preprocessor):
     def __init__(self, dataset_path, regions, image_size=(336, 336, 3), max_len=1000, **kwargs):
+        super().__init__(regions, **kwargs)
+
         self.dataset_path = dataset_path
         self.regions = regions
 
@@ -12,12 +16,12 @@ class GeoPreprocessor:
             ((max_len,), int)  # pretty sure this one can't be None
         )
 
-    def __call__(self, chosen_annotations, image_shape, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
-        x1_batch = [] if passed_images is None else passed_images  # will do it for any falsy value...
+    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
+        x1_batch = [] if passed_processed_images is None else None  # will do it for any falsy value...
         x2_batch = [] if passed_prompts is None else passed_prompts
         y_batch = []
         for annotation in chosen_annotations:
-            if passed_images is None:
+            if passed_processed_images is None:
                 x1 = self.encode_image(annotation["image_name"], image_shape)
                 x1_batch.append(x1)
 
@@ -31,6 +35,9 @@ class GeoPreprocessor:
         if passed_prompts is not None:
             x2_batch = self.encode_texts(x2_batch)
 
+        if passed_processed_images is not None:
+            x1_batch = passed_processed_images
+
         return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
 
     def encode_image(self, image_name, input_shape):
@@ -40,9 +47,6 @@ class GeoPreprocessor:
         img = cv2.resize(img, input_shape[:-1])
 
         return img / 255.0
-
-    def generate_description(self, location):
-        return f"{location['country']}, latitude {location['lat']}, longitude {location['lng']}"
 
     def encode_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
@@ -79,16 +83,5 @@ class GeoPreprocessor:
         return np.array(texts)
     """
 
-    def get_components(self, texts):  # format is so inconsistent throughout this class...
-        # regions = []
-        components = []
-        for text in texts:
-            text_comps = text.split(", ")
-            region = text_comps[0]
-            latitude = float(text_comps[1].split(" ")[1])
-            longitude = float(text_comps[2].split(" ")[1])
-
-            # regions.append(region)
-            components.append([region, latitude, longitude])
-
-        return components
+    def find_image(self, inputs):
+        return inputs[0]

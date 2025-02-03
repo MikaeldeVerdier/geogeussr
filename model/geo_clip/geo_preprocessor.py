@@ -9,7 +9,6 @@ class GeoPreprocessor(Preprocessor):
         super().__init__(regions, **kwargs)
 
         self.dataset_path = dataset_path
-        self.regions = regions
 
         self.output_shapes = (
             (image_size, float),
@@ -58,11 +57,11 @@ class GeoPreprocessor(Preprocessor):
         componentss = self.get_components(texts)
         encoded_texts = []
         for components in componentss:
-            country_idx = self.regions.index(components[0]) + 3601
-            encoded_lat = int(np.round(components[1] + 90 * 10))  # in the range [0, 1800]
-            encoded_lng = int(np.round(components[2] + 180 * 10))  # in the range [0, 3600]
+            region_idx = self.get_region_index("code", components[0]) + 3601
+            encoded_lat = int(np.round((components[1] + 90) * 10))  # in the range [0, 1800]
+            encoded_lng = int(np.round((components[2] + 180) * 10))  # in the range [0, 3600]
 
-            encoded_texts.append([country_idx, encoded_lat, encoded_lng])
+            encoded_texts.append([region_idx, encoded_lat, encoded_lng])
 
         return np.array(encoded_texts)
 

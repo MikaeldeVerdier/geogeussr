@@ -14,9 +14,7 @@ class Trainer:
 
         processor_kwargs = {
             "iamge_size": train_cfg.image_size,
-            "max_len": train_cfg.max_len,
-            "region_translations": train_cfg.region_translations,
-            "region_origins": train_cfg.region_origins
+            "max_len": train_cfg.max_len
         }
 
         self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, 1 - train_cfg.validation_split, train_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)

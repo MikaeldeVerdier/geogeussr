@@ -10,7 +10,6 @@ class ClipPreprocessorOriginal(Preprocessor):
         super().__init__(regions, **kwargs)
 
         self.dataset_path = dataset_path
-        self.regions = regions
         # self.region_translations = region_translations  # initialized in super
         # self.origins = origins
 

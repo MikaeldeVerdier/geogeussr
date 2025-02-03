@@ -10,7 +10,6 @@ class ClipPreprocessor(Preprocessor):
         super().__init__(regions, **kwargs)
 
         self.dataset_path = dataset_path
-        self.regions = regions
 
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14-336")
 

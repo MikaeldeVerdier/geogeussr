@@ -8,9 +8,6 @@ class Evaluator:
         processor_kwargs = {
             "iamge_size": test_cfg.image_size,
             "max_len": test_cfg.max_len,
-            "region_translations": test_cfg.region_translations,
-            "region_origins": test_cfg.region_origins,
-            "region_boxes": test_cfg.region_boxes,
             "refinement_base": test_cfg.refinement_base
         }
 
@@ -68,6 +65,9 @@ class Evaluator:
 
                 img = self.dataset_handler.preprocessor.find_image(inputs)
                 used_prompts = self.dataset_handler.preprocessor.get_refinement_prompts(best_prompt[0], refinement_amount=refinement_level)
+                if not len(used_prompts):
+                    break  # could try to continue if next refinement level is possible but would require a restructure
+
                 inputs, _ = self.dataset_handler.preprocessor([], test_cfg.image_size, passed_processed_images=img, passed_prompts=used_prompts)
 
             print(f"Correct answer: {gt}")

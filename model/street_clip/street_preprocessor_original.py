@@ -10,11 +10,6 @@ class StreetPreprocessorOriginal(Preprocessor):
         super().__init__(regions, **kwargs)
 
         self.dataset_path = dataset_path
-        self.regions = regions
-        self.region_translations = region_translations
-        self.origins = origins
-
-        self.inverse_region_translations = {v: k for k, v in region_translations.items()}
 
         self.clip_processor = CLIPProcessor.from_pretrained("geolocal/StreetCLIP")
 
@@ -76,7 +71,7 @@ class StreetPreprocessorOriginal(Preprocessor):
     def encode_texts(self, texts):
         encoded_texts = []
         for text in texts:
-            encoded_text = text.split(", ")[0]
+            encoded_text = text.split(", ")[0] + "."
 
             encoded_texts.append(encoded_text)
 

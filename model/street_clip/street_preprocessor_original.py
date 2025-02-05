@@ -71,7 +71,7 @@ class StreetPreprocessorOriginal(Preprocessor):
     def encode_texts(self, texts):
         encoded_texts = []
         for text in texts:
-            encoded_text = text.split(", ")[0] + "."
+            encoded_text = text.split(", latitude ")[0] + "."
 
             encoded_texts.append(encoded_text)
 

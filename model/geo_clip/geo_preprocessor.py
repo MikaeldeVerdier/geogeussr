@@ -32,7 +32,7 @@ class GeoPreprocessor(Preprocessor):
             y_batch.append(y)
 
         if passed_prompts is not None:
-            x2_batch = self.encode_texts(x2_batch)
+            x2_batch = self.encode_texts(x2_batch)  # why is this x2_batch and not locations like the other processors? because it doesn't call process, instead encodes in encode_texts?
 
         if passed_processed_images is not None:
             x1_batch = passed_processed_images

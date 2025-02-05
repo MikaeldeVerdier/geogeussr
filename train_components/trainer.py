@@ -1,5 +1,5 @@
 import os
-from tf_keras.optimizers import Adam
+from tf_keras.optimizers import Adam, SGD
 from tf_keras.optimizers.schedules import ExponentialDecay
 
 import train_components.train_config as train_cfg
@@ -24,13 +24,14 @@ class Trainer:
 
     def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2, weight_decay):
         schedule = ExponentialDecay(initial_lr, decay_steps, decay_factor, staircase=True)
-        optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2, weight_decay=weight_decay)
+        # optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2, weight_decay=weight_decay)
+        optimizer = SGD(learning_rate=schedule, momentum=beta_1, weight_decay=weight_decay)
 
         return optimizer
 
     def create_checkpoint_callback(self, load, save_interval, name):
         history_filepath = os.path.join(train_cfg.save_dir, name, f"{name}_training_log.json")  # f"{train.SAVE_PATH}/{name}/training_log.json"
-        checkpoint_filepath = os.path.join(train_cfg.save_dir, name, f"{name}")  # "{epoch}" ?
+        checkpoint_filepath = os.path.join(train_cfg.save_dir, name, f"{name}" + "_{epoch}")
         model_checkpoint_callback = ModelCheckpointWithHistory(load, history_filepath, model_filepath=checkpoint_filepath, save_interval=save_interval)
 
         return model_checkpoint_callback

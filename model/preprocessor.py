@@ -17,12 +17,12 @@ class Preprocessor:
 
     def generate_description(self, location):  # should be on dataset_handler but it's needed here
         if "city" in location:
-            return f"A Street View photo from {location['city']}, latitude {location['lat']}, longitude {location['lng']}."
+            return f"A Street View photo from {location['city']}, latitude {location['lat']}, longitude {location['lng']}"
 
         region_data = self.get_region("code", location["country"])
         translated_region = region_data["name"]
 
-        return f"A Street View photo in {translated_region}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}."
+        return f"A Street View photo in {translated_region}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}"
 
     def get_components(self, texts):  # format is so inconsistent throughout this class...
         # regions = []
@@ -39,7 +39,7 @@ class Preprocessor:
 
             str_latitude, str_longitude = text_comps[1].split(", longitude ")
             latitude = float(str_latitude)
-            longitude = float(str_longitude[:-1])  # [:-1] to remove the period at the end
+            longitude = float(str_longitude)
 
             # regions.append(region)
             components.append([untranslated_region, latitude, longitude])

@@ -4,7 +4,7 @@ from functools import lru_cache
 
 def save_json(data, path):
     with open(path, "w") as json_file:
-        json.dump(data, json_file)
+        json.dump(data, json_file, ensure_ascii=False)
 
 
 def load_json(path):

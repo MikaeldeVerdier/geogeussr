@@ -8,9 +8,9 @@ class StreetCLIP(Model):  # this class is kinda useless, just uses clip_model ba
         self.clip_model = TFCLIPModel.from_pretrained("geolocal/StreetCLIP", from_pt=True)
 
     def infer(self, inputs, ret_np=False):
-        outputs = self.clip_model(**inputs)
+        outputs = self.clip_model(inputs)  # **inputs (changed for compatibility)
 
-        logits_per_image = outputs.logits_per_image
+        logits_per_image = outputs["logits_per_image"]  # .logits_per_image (changed for compatibility)
 
         if ret_np:
             return logits_per_image.numpy()

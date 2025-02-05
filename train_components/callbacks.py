@@ -2,6 +2,8 @@ import os
 import json
 from tf_keras.callbacks import Callback
 
+from shared_components.files import save_json
+
 class ModelCheckpointWithHistory(Callback):
     def __init__(self, load_initial, history_filepath, model_filepath, save_interval, **kwargs):
         super().__init__(**kwargs)
@@ -46,8 +48,7 @@ class ModelCheckpointWithHistory(Callback):
         return old_metrics
 
     def save_metrics(self):
-        with open(self.history_filepath, "w") as f:
-            json.dump(self.history, f)
+        save_json(self.history, self.history_filepath)
 
     def on_epoch_end(self, epoch, logs=None):
         self.history = self.append_to_history(self.history, logs)
@@ -55,6 +56,6 @@ class ModelCheckpointWithHistory(Callback):
 
         if self.num_unsaved_epochs >= self.save_interval:  # could just use (epoch + 1) % self.save_iterval since epoch is correct now
             self.save_metrics()
-            self.model.save(self.model_filepath, save_format="tf")
+            self.model.save(self.model_filepath.format(self.get_epoch()), save_format="tf")
 
             self.num_unsaved_epochs = 0

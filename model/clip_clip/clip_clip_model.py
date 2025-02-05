@@ -8,9 +8,9 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
         self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
 
     def infer(self, inputs, ret_np=False):
-        outputs = self.clip_model(**inputs)
+        outputs = self.clip_model(inputs)  # **inputs (changed for compatibility)
 
-        logits_per_image = outputs.logits_per_image
+        logits_per_image = outputs["logits_per_image"]  # .logits_per_image (changed for compatibility)
 
         if ret_np:
             return logits_per_image.numpy()

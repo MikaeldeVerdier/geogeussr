@@ -1,4 +1,5 @@
 import numpy as np
+from transformers import CLIPModel, CLIPProcessor
 from torchview import draw_graph
 
 import os
@@ -7,9 +8,6 @@ parent_dir_name = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(parent_dir_name)  # This sucks!
 
 import visualizer_config as viz_cfg
-from model.street_clip.street_clip_model import StreetCLIP
-from model.clip_clip.clip_clip_model import ClipCLIP
-from model.clip_clip.clip_preprocessor import ClipPreprocessor  # will work for both clip and street
 
 class PTModelVisualizer:
     def __init__(self, model, save_path, input_data):
@@ -26,9 +24,11 @@ class PTModelVisualizer:
 
 
 if __name__ == "__main__":
-    model = ClipCLIP().clip_model
-    processor = ClipPreprocessor(None, None).clip_processor  # This sucks too!
+    model_name = "openai/clip-vit-large-patch14-336"
+    model = CLIPModel.from_pretrained(model_name)
+    processor = CLIPProcessor.from_pretrained(model_name)
+
     input_data = processor(["Hello World"], np.random.rand(1, 3, 336, 336), return_tensors="pt", padding=True)
     mod_viz = PTModelVisualizer(model, viz_cfg.SAVE_PATH, input_data)
 
-    mod_viz.visualize()
+    mod_viz.visualize(depth=2)

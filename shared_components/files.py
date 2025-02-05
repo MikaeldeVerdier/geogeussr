@@ -8,7 +8,7 @@ def save_json(data, path):
 
 
 def load_json(path):
-    with open(path, "r") as json_file:
+    with open(path, encoding="utf8") as json_file:
         return json.load(json_file)
 
 

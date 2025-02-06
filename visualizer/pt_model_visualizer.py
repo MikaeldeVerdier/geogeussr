@@ -2,11 +2,6 @@ import numpy as np
 from transformers import CLIPModel, CLIPProcessor
 from torchview import draw_graph
 
-import os
-import sys
-parent_dir_name = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(parent_dir_name)  # This sucks!
-
 import visualizer_config as viz_cfg
 
 class PTModelVisualizer:

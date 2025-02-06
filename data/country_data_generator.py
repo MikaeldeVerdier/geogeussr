@@ -1,6 +1,11 @@
 import pandas as pd
 import geopandas as gpd
 
+import os
+import sys
+parent_dir_name = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(parent_dir_name)  # This sucks!
+
 import generator_config as gen_cfg
 from shared_components.files import save_json
 
@@ -68,8 +73,15 @@ class CountryDataGenerator:
 
         return [origin_point.x, origin_point.y]  # Longitude, Latitude
 
-    def get_bordering_countries(self, country_geodf, country_name=None):
-        pass
+    def get_bordering_countries(self, country_geodf, country_name=None):  # is only direct borders, not ocean borders
+        if country_geodf.empty:
+            print(f"Bordering countries not found for {country_name}!")
+
+            return []
+        
+        bordering_countries = self.geodf[self.geodf.geometry.touches(country_geodf.geometry, align=True)]
+
+        return bordering_countries.values
 
     def generate_data(self):
         country_codes, country_names = self.get_countries()
@@ -82,13 +94,15 @@ class CountryDataGenerator:
             country_geodf = self.geodf[self.geodf.index == country_code]
             country_bounding_box = self.get_bounding_box(country_geodf, country_name=country_name)
             country_origin = self.get_origin(country_geodf, country_name=country_name)
+            country_bordering_countries = self.get_bordering_countries(country_geodf, country_name=country_name)
 
             country_obj = {
                 "code": country_code,
                 "name": country_name,
                 "cities": country_cities,
                 "bounding_box": country_bounding_box,
-                "origin": country_origin
+                "origin": country_origin,
+                "bordering_countries": country_bordering_countries
             }
             country_objs.append(country_obj)
 

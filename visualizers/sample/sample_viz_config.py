@@ -1,0 +1,13 @@
+# Visualizer configuration
+save_path = "visualizers/sample/sample_data"
+shapefile_path = "data/gadm_410.gpkg"
+
+# Visualization arguments
+load_points = False
+n_points = 1000000
+smoothing = 0
+bins = 300
+normalize_heatmap = True
+show_map = True
+show_points = False
+animate = False  # only for naive sampling

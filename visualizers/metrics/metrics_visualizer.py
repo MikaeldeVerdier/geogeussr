@@ -3,13 +3,12 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-import visualizer_config as viz_cfg
+import metrics_viz_config as viz_cfg
 
 class MetricsVisualizer:
-    def __init__(self, load_path, save_path):
-        self.save_path = save_path
-
-        self.load_metrics(load_path)
+    def __init__(self):
+        self.save_path = viz_cfg.save_path
+        self.load_metrics(viz_cfg.metrics_path)
 
     def load_metrics(self, load_path):
         self.metrics = {}
@@ -24,7 +23,7 @@ class MetricsVisualizer:
             with open(metrics_path, "r") as json_file:
                 self.metrics[submodel_dir] = json.load(json_file)
 
-    def plot_metrics(self, submodels=None, seperate=False, scoped=False, trendline=False, down_sampled_to=None):
+    def plot_metrics(self, submodels=viz_cfg.used_submodels, seperate=viz_cfg.seperate, scoped=viz_cfg.scoped, trendline=viz_cfg.trendline, down_sampled_to=viz_cfg.down_sampled_to):
         if submodels is not None:
             chosen_submodels = {submodel: self.metrics[submodel] for submodel in submodels}  # doesn't allow duplicates (creates duplicate images with different inputs)
         else:
@@ -116,6 +115,5 @@ class MetricsVisualizer:
 
 
 if __name__ == "__main__":
-    # Plot metrics (with model from save_path)
-    met_viz = MetricsVisualizer(viz_cfg.LOAD_PATH, viz_cfg.SAVE_PATH)
-    met_viz.plot_metrics(seperate=True, scoped=True, trendline=True, down_sampled_to=1000)
+    met_viz = MetricsVisualizer()
+    met_viz.plot_metrics()

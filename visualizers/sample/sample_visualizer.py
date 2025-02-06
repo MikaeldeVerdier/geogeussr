@@ -2,25 +2,21 @@ import os
 import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
-from shapely.geometry import Point
 from shapely.ops import nearest_points
 from scipy.ndimage import gaussian_filter
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.animation import FuncAnimation
 
-import visualizer_config as viz_cfg
+import sample_viz_config as viz_cfg
 
 class SampleVisualizer:
-    def __init__(self, save_path, shapefile_path, dissolve=True, save_dissolved=False):
+    def __init__(self, save_path, shapefile_path):
         self.save_path = save_path
 
         self.geodf = gpd.read_file(shapefile_path)
-        if dissolve:
-            self.geodf = self.geodf.dissolve()
+        self.geodf = self.geodf.dissolve()
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
-        if save_dissolved:
-            self.geodf.to_file("dissolved_gadm.gpkg", driver="GPKG")
 
     """
     def get_points(self, df):
@@ -84,7 +80,7 @@ class SampleVisualizer:
 
         plt.close()
 
-    def plot_refined_sampling(self, load_points=False, n_points=1000000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False):
+    def plot_refined_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points):
         points_path = os.path.join(self.save_path, f"{n_points}_refined_points.npy")
         if not load_points:
             points = self.geodf.sample_points(n_points)
@@ -111,7 +107,7 @@ class SampleVisualizer:
 
         return np.array(used_points)
 
-    def plot_naive_sampling(self, load_points=False, n_points=1000, smoothing=0, bins=300, normalize_heatmap=True, show_map=True, show_points=False, animate=False):
+    def plot_naive_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points, animate=viz_cfg.animate):
         if not load_points or animate:  # ugly but
             n_lats = round(np.sqrt(n_points * 2 / 3))
             n_lngs = round(n_points / n_lats)
@@ -164,10 +160,6 @@ class SampleVisualizer:
 
 
 if __name__ == "__main__":
-    # Plot sampling
-    sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dataset_generator/gadm_410.gpkg")
-    # sam_viz = SampleVisualizer(viz_cfg.SAVE_PATH, "dissolved_gadm.gpkg", dissolve=False)  # to use un-dissolved (or pre-dissolved)
-    # sam_viz.plot_naive_sampling()  # Using naive sampling
-    # sam_viz.plot_naive_sampling(n_points=1000)  # To animate naive sampling (lower n_points recommended)
-    sam_viz.plot_refined_sampling()  # Using refined sampling
-    # sam_viz.plot_refined_sampling(load_points=True)  # to use saved points from previous visualization
+    sam_viz = SampleVisualizer()
+    # sam_viz.plot_naive_sampling()
+    sam_viz.plot_refined_sampling()

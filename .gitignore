@@ -8,4 +8,4 @@
 datasets/
 
 save_folder*/
-visualizations/
+visualizers/*/*_data/

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from transformers import CLIPModel, CLIPProcessor
 from torchview import draw_graph
@@ -10,7 +11,7 @@ class PTModelVisualizer:
         self.save_path = save_path
         self.input_data = input_data
 
-    def visualize(self, depth=3, expand_nested=True):
+    def visualize(self, depth=3, expand_nested=False):
         model_graph = draw_graph(self.model, input_data, depth=depth, expand_nested=expand_nested)
         dot = model_graph.visual_graph
 

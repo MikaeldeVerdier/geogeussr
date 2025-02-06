@@ -68,6 +68,9 @@ class CountryDataGenerator:
 
         return [origin_point.x, origin_point.y]  # Longitude, Latitude
 
+    def get_bordering_countries(self, country_geodf, country_name=None):
+        pass
+
     def generate_data(self):
         country_codes, country_names = self.get_countries()
 

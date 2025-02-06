@@ -20,14 +20,14 @@ class StreetPreprocessor(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
-        images = [] if passed_processed_images is None else None  # don't process again!
+        images = [] if passed_processed_images is None and passed_images is None else None  # don't process again!
         locations = [] if passed_prompts is None else passed_prompts
         for annotation in chosen_annotations:
-            if passed_processed_images is None:
+            if passed_processed_images is None and passed_images is None:
                 image = self.get_image(annotation["image_name"], image_shape)
                 images.append(image)
 
@@ -37,6 +37,9 @@ class StreetPreprocessor(Preprocessor):
 
             y = self.generate_description(annotation["location"])
             y_batch.append(y)
+
+        if passed_images is not None:
+            images = passed_images
 
         if passed_prompts is not None:
             locations = self.encode_texts(locations)  # not needed, just here for continuity with other preprocessors

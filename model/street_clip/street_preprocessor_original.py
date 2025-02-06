@@ -20,14 +20,14 @@ class StreetPreprocessorOriginal(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # could unify with other clip preprocessors
+    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could unify with other clip preprocessors
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
-        images = [] if passed_processed_images is None else None
+        images = [] if passed_processed_images is None and passed_images is None else None
         locations = [] if passed_prompts is None else passed_prompts
         for annotation in chosen_annotations:
-            if passed_processed_images is None:
+            if passed_processed_images is None and passed_images is None:
                 image = self.get_image(annotation["image_name"], image_shape)
                 images.append(image)
 
@@ -37,6 +37,9 @@ class StreetPreprocessorOriginal(Preprocessor):
 
             y = self.generate_description(annotation["location"])
             y_batch.append(y)
+
+        if passed_images is not None:
+            images = passed_images
 
         if passed_prompts is not None:
             locations = self.encode_texts(locations)

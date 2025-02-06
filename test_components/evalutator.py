@@ -44,7 +44,7 @@ class Evaluator:
         }
 
         region_results = []
-        distance_results = []
+        distance_results = []  # TODO: Visualize this with a distribution
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(test_cfg.iteration_amount):
             inputs, gt = next(generator)
@@ -57,7 +57,7 @@ class Evaluator:
                     best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, used_prompts)
                     print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
                 else:
-                    best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, prompts)
+                    best_prompt = self.dataset_handler.decode_predictions_com(logits_per_image, used_prompts)
                     print(f"Model guessed (CoM): {best_prompt}")  # center-of-mass
 
                 if refinement_level == test_cfg.refinement_steps:

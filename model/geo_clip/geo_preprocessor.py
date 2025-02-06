@@ -15,12 +15,12 @@ class GeoPreprocessor(Preprocessor):
             ((max_len,), int)  # pretty sure this one can't be None
         )
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
-        x1_batch = [] if passed_processed_images is None else None  # will do it for any falsy value...
+    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
+        x1_batch = [] if passed_processed_images is None and passed_images is None else None  # will do it for any falsy value...
         x2_batch = [] if passed_prompts is None else passed_prompts
         y_batch = []
         for annotation in chosen_annotations:
-            if passed_processed_images is None:
+            if passed_processed_images is None and passed_images is None:
                 x1 = self.encode_image(annotation["image_name"], image_shape)
                 x1_batch.append(x1)
 
@@ -34,8 +34,8 @@ class GeoPreprocessor(Preprocessor):
         if passed_prompts is not None:
             x2_batch = self.encode_texts(x2_batch)  # why is this x2_batch and not locations like the other processors? because it doesn't call process, instead encodes in encode_texts?
 
-        if passed_processed_images is not None:
-            x1_batch = passed_processed_images
+        if passed_processed_images is not None or passed_images is not None:
+            x1_batch = passed_processed_images or passed_images  # weird to not have this distinction
 
         return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
 

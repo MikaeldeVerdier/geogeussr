@@ -38,11 +38,11 @@ class ClipPreprocessor(Preprocessor):
             y = self.generate_description(annotation["location"])
             y_batch.append(y)
 
-        if passed_prompts is not None:
-            locations = self.encode_texts(locations)  # not needed, just here for continuity with other preprocessors
-
         if passed_images is not None:
             images = passed_images
+
+        if passed_prompts is not None:
+            locations = self.encode_texts(locations)  # not needed, just here for continuity with other preprocessors
 
         x_batch = self.process(images, locations)
 

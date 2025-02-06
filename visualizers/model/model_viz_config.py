@@ -5,5 +5,5 @@ example_prompts = ["Hello World"]
 example_input_shape = (1, 3, 336, 336)
 
 # Visualization arguments
-depth = 2
-expand_nested = False
+depth = 5
+expand_nested = True

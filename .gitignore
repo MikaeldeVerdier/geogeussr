@@ -8,4 +8,7 @@
 datasets/
 
 save_folder*/
+
 visualizers/*/*_data/
+!visualizers/model/model_data/
+visualizers/model/model_data/model_*d_Trueen

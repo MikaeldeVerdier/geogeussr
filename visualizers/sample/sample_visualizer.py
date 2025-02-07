@@ -10,7 +10,7 @@ from matplotlib.animation import FuncAnimation
 import sample_viz_config as viz_cfg
 
 class SampleVisualizer:
-    def __init__(self, save_path, shapefile_path):
+    def __init__(self, save_path=viz_cfg.save_path, shapefile_path=viz_cfg.shapefile_path):
         self.save_path = save_path
 
         self.geodf = gpd.read_file(shapefile_path)

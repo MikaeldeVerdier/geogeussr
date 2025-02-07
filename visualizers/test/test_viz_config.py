@@ -1,9 +1,9 @@
 # Visualizer configuration
-save_path = "visualizers/model/model_data"
-model_name = "openai/clip-vit-large-patch14-336"
+save_path = "save_folder/test.png"
+test_file = "save_folder/test_results.json"
 example_prompts = ["Hello World"]
 example_input_shape = (1, 3, 336, 336)
 
 # Visualization arguments
-depth = 5
-expand_nested = True
+grouping_size = 5
+plot_density = True

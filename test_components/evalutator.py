@@ -2,6 +2,7 @@ from math import radians, sin, cos, sqrt, atan2
 
 import test_components.test_config as test_cfg
 from shared_components.dataset_handler import DatasetHandler
+from shared_components.files import save_json
 
 class Evaluator:
     def __init__(self, processor_method="Geo"):
@@ -85,3 +86,9 @@ class Evaluator:
         mean_distance = sum(distance_results) / len(distance_results)
         print(f"Country was correct {region_accuracy * 100:}% of the time.")
         print(f"Average distance was {mean_distance:.2f}km.")
+
+        test_results = {
+            "correct_regions": region_results,
+            "distances": distance_results
+        }
+        save_json(test_results, test_cfg.test_results_path)

@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import metrics_viz_config as viz_cfg
 
 class MetricsVisualizer:
-    def __init__(self):
-        self.save_path = viz_cfg.save_path
-        self.load_metrics(viz_cfg.metrics_path)
+    def __init__(self, save_path=viz_cfg.save_path, metrics_path=viz_cfg.metrics_path):
+        self.save_path = save_path
+        self.load_metrics(metrics_path)
 
     def load_metrics(self, load_path):
         self.metrics = {}

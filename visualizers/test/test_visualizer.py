@@ -20,15 +20,6 @@ class TestVisualizer:
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
 
-    def transform_coordinates(self, coords, old_bounds, new_bounds):
-        x_min_1, y_min_1, x_max_1, y_max_1 = old_bounds
-        x_min, y_min, x_max, y_max = new_bounds
-
-        coords_normalized = (coords - [x_min_1, y_min_1]) / [x_max_1 - x_min_1, y_max_1 - y_min_1]
-        coords_transformed = coords_normalized * [x_max - x_min, y_max - y_min] + [x_min, y_min]
-
-        return coords_transformed
-
     def visualize_test(self):
         fig, axs = plt.subplots(2, 1, figsize=(15, 23), height_ratios=[1, 2])  # figsize would be (15, 20) but a little extra for title space and spacing
 
@@ -45,6 +36,14 @@ class TestVisualizer:
         axs[0].scatter(lat_lngs[:, 1], lat_lngs[:, 0], c="red", alpha=norm_confs)
         axs[0].scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1, label=f"Final Guess ({best_prompt[0]})")
         axs[0].scatter([], [], c="red", alpha=0.5, label="Prompts (intensity based on confidence)")  # just for legend
+
+        text = ""
+        conf_order = np.argsort(confs)[::-1][:5]
+        for region, conf in zip(prompt_components[conf_order, 0], confs[conf_order]):
+            text += f"{region}: {conf * 100:.2f}%\n"
+
+        props = dict(boxstyle="round", facecolor="white", alpha=0.5)
+        axs[0].text(0.05, 0.95, text[:-2], transform=axs[0].transAxes, fontsize=14, verticalalignment="top", bbox=props)
 
         # axs[0].scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
         axs[0].axis("off")

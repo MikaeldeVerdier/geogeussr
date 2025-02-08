@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tf_keras.models import Model
+from tf_keras.models import Model, load_model
+from model.constrastive_loss import ContrastiveLoss
 # from tf_keras import Variable
 
 import model.geo_clip.submodels.configs.shared_config as shr_cfg
@@ -21,6 +22,10 @@ class GeoCLIP(Model):
 
         self.temperature = tf.Variable(initial_value=1.0, trainable=True, name="temperature", dtype=tf.float32)
         # self.temperature = self.add_weight(name="temperature", shape=(), initializer="ones")
+
+    @classmethod
+    def from_loaded(cls, load_path, **kwargs):
+        return load_model(load_path, custom_objects={"ContrastiveLoss": ContrastiveLoss})
 
     def infer(self, image_input, text_input, ret_np=False):
         image_embeddings = self.image_encoder(image_input)

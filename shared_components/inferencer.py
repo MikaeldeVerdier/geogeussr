@@ -25,6 +25,10 @@ class Inferencer:
             if process_first:
                 inputs, _ = self.dataset_handler.preprocessor([], self.image_size, passed_images=image, passed_prompts=used_prompts)
 
+            # import numpy as np
+            # inputs["input_ids"] = np.array(inputs["input_ids"], dtype=np.int32)
+            # inputs["attention_mask"] = np.array(inputs["attention_mask"], dtype=np.int32)
+
             logits_per_image = model(inputs, ret_np=True)
 
             if refinement_level == 0:

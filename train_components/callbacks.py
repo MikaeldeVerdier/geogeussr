@@ -25,7 +25,7 @@ class ModelCheckpointWithHistory(Callback):
         return epoch
 
     def setup_save_folder(self):
-        save_folders = self.history_filepath.replace("\\", "/").split("/")[:-1]
+        save_folders = self.history_filepath.split(os.sep)[:-1]
         for i in range(1, len(save_folders) + 1):  # hate range(len(x)) but yeah
             folder_to_check = "/".join(save_folders[:i])
 

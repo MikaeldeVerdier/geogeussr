@@ -1,3 +1,4 @@
+import os
 from math import radians, sin, cos, sqrt, atan2
 
 import validate_components.validator_config as val_cfg
@@ -34,6 +35,9 @@ class Validator:
 
     def validate(self, model, use_com=False):
         # prompts = self.get_prompts()
+        if val_cfg.inference_results_path is not None and not os.path.exists(val_cfg.inference_results_path):
+            os.mkdir(val_cfg.inference_results_path)
+
         prompts = self.inferencer.dataset_handler.preprocessor.get_prompts()
         process_kwargs = {
             "passed_prompts": prompts
@@ -47,6 +51,11 @@ class Validator:
             used_prompts = prompts
 
             best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
+
+            if val_cfg.inference_results_path is not None:
+                image = self.inferencer.dataset_handler.preprocessor.find_image(inputs)
+                inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
+                self.inferencer.save_inference(used_prompts, image, best_prompt[0], sim_matrix, inference_name, correct_prompt=gt[0])
 
             print(f"Correct answer: {gt}")
 

@@ -18,3 +18,4 @@ dataset_path = "data/datasets/dataset10"
 iteration_amount = 10
 
 vaidation_results_path = "save_folder/validation_results.json"
+inference_results_path = "save_folder/inference_results"  # None

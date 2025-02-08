@@ -1,5 +1,6 @@
 # import test_components.test_config as test_cfg
 from shared_components.dataset_handler import DatasetHandler
+from shared_components.files import save_json
 
 class Inferencer:
     def __init__(self, image_size, max_len, refinement_base, refinement_steps, dataset_path, regions, shapefile_path, processor_method="Geo"):
@@ -53,3 +54,18 @@ class Inferencer:
                 inputs, _ = self.dataset_handler.preprocessor([], self.image_size, passed_processed_images=img, passed_prompts=used_prompts)
 
         return best_prompt, first_sim_matrix
+
+    def save_inference(self, prompts, image, best_prompt, sim_matrix, path, correct_prompt=None):
+        prompt_components = self.dataset_handler.preprocessor.get_components(prompts)
+        best_prompt_components = self.dataset_handler.preprocessor.get_components([best_prompt])[0]
+        inference_results = {
+            "prompts": prompt_components,
+            "image": image[0].tolist(),
+            "confs": sim_matrix.tolist(),
+            "best_prompt": best_prompt_components
+        }
+        if correct_prompt is not None:
+            correct_prompt_components = self.dataset_handler.preprocessor.get_components([correct_prompt])[0]
+            inference_results["correct_prompt"] = correct_prompt_components
+
+        save_json(inference_results, path)

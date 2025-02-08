@@ -20,8 +20,34 @@ class TestVisualizer:
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
 
+    def plot_image(self, ax, image):
+        ax.imshow(image[..., ::-1])  # shows the image the model used (aka resized to (336x336))
+        ax.set_title("Test Image", fontsize=20)
+        ax.axis("off")
+
+    def plot_scatter(self, ax, lat_lngs, confs, prompt_components, best_prompt):
+        self.geodf.plot(alpha=0.2, ax=ax)
+        # norm_confs = confs / np.exp(np.max(confs))
+        norm_confs = confs ** 0.75
+        ax.scatter(lat_lngs[:, 1], lat_lngs[:, 0], c="red", alpha=norm_confs)
+        ax.scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1, label=f"Final Guess ({best_prompt[0]})")
+        ax.scatter([], [], c="red", alpha=0.5, label="Prompts (intensity based on confidence)")  # just for legend
+
+        text = ""
+        conf_order = np.argsort(confs)[::-1][:5]
+        for region, conf in zip(prompt_components[conf_order, 0], confs[conf_order]):
+            text += f"{region}: {conf * 100:.2f}%\n"
+
+        props = dict(boxstyle="round", facecolor="white", alpha=0.5)
+        ax.text(0.05, 0.95, text[:-2], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)
+
+        # ax.scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
+        ax.set_title("Test Results", fontsize=20)
+        ax.axis("off")
+        ax.legend(fontsize=15)
+
     def visualize_test(self):
-        fig, axs = plt.subplots(2, 1, figsize=(15, 23), height_ratios=[1, 2])  # figsize would be (15, 20) but a little extra for title space and spacing
+        fig, axs = plt.subplots(1, 2, figsize=(21, 9), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
 
         prompt_components = np.array(self.test_information["prompts"])
         image = np.array(self.test_information["image"])
@@ -30,29 +56,10 @@ class TestVisualizer:
 
         lat_lngs = np.array(prompt_components[:, 1:], dtype=np.float32)
 
-        self.geodf.plot(alpha=0.2, ax=axs[0])
-        # norm_confs = confs / np.exp(np.max(confs))
-        norm_confs = confs ** 0.75
-        axs[0].scatter(lat_lngs[:, 1], lat_lngs[:, 0], c="red", alpha=norm_confs)
-        axs[0].scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1, label=f"Final Guess ({best_prompt[0]})")
-        axs[0].scatter([], [], c="red", alpha=0.5, label="Prompts (intensity based on confidence)")  # just for legend
+        self.plot_image(axs[0], image)
+        self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt)
 
-        text = ""
-        conf_order = np.argsort(confs)[::-1][:5]
-        for region, conf in zip(prompt_components[conf_order, 0], confs[conf_order]):
-            text += f"{region}: {conf * 100:.2f}%\n"
-
-        props = dict(boxstyle="round", facecolor="white", alpha=0.5)
-        axs[0].text(0.05, 0.95, text[:-2], transform=axs[0].transAxes, fontsize=14, verticalalignment="top", bbox=props)
-
-        # axs[0].scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
-        axs[0].axis("off")
-        axs[0].legend()
-
-        axs[1].imshow(image[..., ::-1])  # shows the image the model used (aka resized to (336x336))
-        axs[1].axis("off")
-
-        plt.suptitle("Inference Results for Test Image", fontsize=30)
+        plt.suptitle("Inference Results for Test Image", fontsize=40)
         plt.tight_layout()
 
         plt.savefig(self.save_path)

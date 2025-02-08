@@ -8,7 +8,7 @@ if __name__ == "__main__":
     geo_clip = GeoCLIP(image_encoder="resnet")
     tester = Tester()
 
-    tester.test(geo_clip, "test.png", use_com=True)
+    tester.test(geo_clip, dir="test_imgs", use_com=True)
 
 
     # # Test a StreetCLIP model with new prompt format

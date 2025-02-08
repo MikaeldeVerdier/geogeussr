@@ -154,7 +154,7 @@ class DatasetHandler:
             # total_weight = 0  // total_weight is always 1 after softmax
             components = np.array(self.preprocessor.get_components(prompts))
             lats = np.array(components[:, 1], dtype=np.float32)
-            lngs = np.array(components[:, 2], dtype=np.float32)
+            lngs = np.array(components[:, 2], dtype=np.float32)  # TODO: This method is flawed. doesn't take looping around the globe into account.
             avg_latitude = np.sum(lats * norm_batch_sim, axis=-1)
             avg_longitude = np.sum(lngs * norm_batch_sim, axis=-1)
             # for similarity, prompt in zip(norm_batch_sim, prompts):

@@ -1,3 +1,4 @@
+import os
 import json
 import numpy as np
 import geopandas as gpd
@@ -7,13 +8,23 @@ import test_viz_config as viz_cfg
 
 # TODO: Improve this one to show refinements too (maybe with an animation? Would be really cool)
 class TestVisualizer:
-    def __init__(self, save_path=viz_cfg.save_path, test_file=viz_cfg.test_file, shapefile_path=viz_cfg.shapefile_path):
+    def __init__(self, save_path=viz_cfg.save_path, test_dir=viz_cfg.test_dir, shapefile_path=viz_cfg.shapefile_path):
         self.save_path = save_path
 
-        with open(test_file, "r") as json_file:
-            self.test_information = json.load(json_file)
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
 
+        self.load_tests(test_dir)
         self.load_gadm(shapefile_path)
+
+    def load_tests(self, test_dir):
+        self.test_informations = {}
+        for test_file in os.listdir(test_dir):
+            image_name = test_file.split(".")[0]
+
+            test_path = os.path.join(test_dir, test_file)
+            with open(test_path, "r") as json_file:
+                self.test_informations[image_name] = json.load(json_file)
 
     def load_gadm(self, shapefile_path):
         self.geodf = gpd.read_file(shapefile_path)
@@ -46,27 +57,29 @@ class TestVisualizer:
         ax.axis("off")
         ax.legend(fontsize=15)
 
-    def visualize_test(self):
-        fig, axs = plt.subplots(1, 2, figsize=(21, 9), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
+    def visualize_tests(self):
+        for test_name, test_information in self.test_informations.items():
+            fig, axs = plt.subplots(1, 2, figsize=(21, 9), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
 
-        prompt_components = np.array(self.test_information["prompts"])
-        image = np.array(self.test_information["image"])
-        confs = np.array(self.test_information["confs"])
-        best_prompt = np.array(self.test_information["best_prompt"])
+            prompt_components = np.array(test_information["prompts"])
+            image = np.array(test_information["image"])
+            confs = np.array(test_information["confs"])
+            best_prompt = np.array(test_information["best_prompt"])
 
-        lat_lngs = np.array(prompt_components[:, 1:], dtype=np.float32)
+            lat_lngs = np.array(prompt_components[:, 1:], dtype=np.float32)
 
-        self.plot_image(axs[0], image)
-        self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt)
+            self.plot_image(axs[0], image)
+            self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt)
 
-        plt.suptitle("Inference Results for Test Image", fontsize=40)
-        plt.tight_layout()
+            plt.suptitle("Inference Results for Test Image", fontsize=40)
+            plt.tight_layout()
 
-        plt.savefig(self.save_path)
+            test_path = os.path.join(self.save_path, f"{test_name}.png")
+            plt.savefig(test_path)
 
-        plt.close()
+            plt.close()
 
 
 if __name__ == "__main__":
     visualizer = TestVisualizer()
-    visualizer.visualize_test()
+    visualizer.visualize_tests()

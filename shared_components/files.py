@@ -2,7 +2,7 @@ import os
 import json
 from functools import lru_cache
 
-def save_json(data, path):
+def save_json(data, path):  # could make this create the path if it doesn't exist
     with open(path, "w") as json_file:
         json.dump(data, json_file, ensure_ascii=False)
 

@@ -34,8 +34,11 @@ class GeoPreprocessor(Preprocessor):
         if passed_prompts is not None:
             x2_batch = self.encode_texts(x2_batch)  # why is this x2_batch and not locations like the other processors? because it doesn't call process, instead encodes in encode_texts?
 
-        if passed_processed_images is not None or passed_images is not None:
-            x1_batch = passed_processed_images or passed_images  # weird to not have this distinction
+        if passed_processed_images is not None:
+            x1_batch = passed_processed_images
+
+        if passed_images is not None:
+            x1_batch = passed_images
 
         return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
 

@@ -3,7 +3,7 @@ from dataset_generator_components.dataset_generator import DatasetGenerator
 API_KEY = "API_KEY"  # str
 SECRET = None  # str | None
 
-SHAPEFILE_PATH = "data/gadm_410.gpkg"  # str
+SHAPEFILE_PATH = "data/dissolved_gadm.gpkg"  # str
 DATASET_DIR = "data/datasets/dataset"  # str
 AMOUNT_IMAGES = 100  # int
 IMAGE_SIZE = (640, 640)  # (int int)

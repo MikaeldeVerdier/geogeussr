@@ -8,7 +8,7 @@ if __name__ == "__main__":
     geo_clip = GeoCLIP(image_encoder="resnet")
     evaluator = Evaluator()
 
-    evaluator.evaluate(geo_clip)
+    evaluator.evaluate(geo_clip, use_com=True)
 
 
     # # Test a StreetCLIP model with new prompt format

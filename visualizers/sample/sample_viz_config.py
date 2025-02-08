@@ -1,6 +1,6 @@
 # Visualizer configuration
 save_path = "visualizers/sample/sample_data"
-shapefile_path = "data/gadm_410.gpkg"
+shapefile_path = "data/dissolved_gadm.gpkg"
 
 # Visualization arguments
 load_points = False

@@ -10,6 +10,7 @@ tokens_len = max_len
 region_path = "data/country_data.json"
 regions = load_json(region_path)
 used_regions = None
+shapefile_path = "data/dissolved_gadm.gpkg"  # None
 
 refinement_base = 0.5
 refinement_steps = 1

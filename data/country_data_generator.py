@@ -1,20 +1,15 @@
+import json
 import pandas as pd
 import geopandas as gpd
 
-import os
-import sys
-parent_dir_name = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(parent_dir_name)  # This sucks!
-
 import generator_config as gen_cfg
-from shared_components.files import save_json
 
 class CountryDataGenerator:
-    def __init__(self, save_path, csv_path, gpkg_path, top_k=30, is_predissolved=False):
+    def __init__(self, save_path=gen_cfg.save_path, csv_path=gen_cfg.csv_path, gpkg_path=gen_cfg.gpkg_path, top_k=gen_cfg.top_k):
         self.save_path = save_path
 
         self.prepare_df(csv_path, top_k)
-        self.prepare_geodf(gpkg_path, is_predissolved)
+        self.prepare_geodf(gpkg_path)
 
     def prepare_df(self, csv_path, top_k):
         df = pd.read_csv(csv_path)
@@ -24,10 +19,8 @@ class CountryDataGenerator:
         df_sorted = df.sort_values(by=["iso3", "population"], ascending=[True, False])
         self.city_df = df_sorted.groupby("iso3").head(top_k)
 
-    def prepare_geodf(self, gpkg_path, is_predissolved):
+    def prepare_geodf(self, gpkg_path):
         self.geodf = gpd.read_file(gpkg_path)
-        if not is_predissolved:
-            self.geodf = self.geodf.dissolve(by="GID_0")
         if self.geodf.crs != "EPSG:3857":
             self.geodf = self.geodf.to_crs("EPSG:3857")
 
@@ -80,6 +73,7 @@ class CountryDataGenerator:
             return []
         
         bordering_countries = self.geodf[self.geodf.geometry.touches(country_geodf.geometry, align=True)]
+        print(bordering_countries)
 
         return bordering_countries.values
 
@@ -111,9 +105,12 @@ class CountryDataGenerator:
         return country_objs
 
     def save_data(self, data):
-        save_json(data, self.save_path)
+        with open(self.save_path, "w") as f:
+            json.dump(data, f, ensure_ascii=False)
+
+        # save_json(data, self.save_path)
 
 
 if __name__ == "__main__":
-    country_data_generator = CountryDataGenerator(gen_cfg.save_path, gen_cfg.csv_path, gen_cfg.gpkg_path, top_k=gen_cfg.top_k, is_predissolved=gen_cfg.is_predissolved)
+    country_data_generator = CountryDataGenerator()
     country_data = country_data_generator.generate_data()

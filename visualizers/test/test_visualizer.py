@@ -25,7 +25,7 @@ class TestVisualizer:
         correct_rate = np.mean(was_corrects)
 
         plt.title("Distance Distribution for Testing Results")
-        plt.suptitle(f"Average Distance: {avg_dist:.2f}km, Correct Rate: {correct_rate * 100:.2f}%")
+        plt.suptitle(f"Average Distance: {avg_dist:.2f}km, Correct Rate: {correct_rate * 100:.2f}%")  # a bit weird for this to be...
         plt.xlabel("Distance")
         plt.ylabel("Density" if plot_density else "Count")
         plt.legend()

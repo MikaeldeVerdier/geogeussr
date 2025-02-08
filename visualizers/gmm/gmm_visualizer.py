@@ -15,7 +15,6 @@ class GMMVisualizer:
 
     def load_geodf(self, path):
         self.geodf = gpd.read_file(path)
-        self.geodf = self.geodf.dissolve(by="GID_0")
 
     def load_gmm(self, path):
         with open(path, "rb") as pkl_file:

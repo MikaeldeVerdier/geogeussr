@@ -31,7 +31,6 @@ class ImageFetcher:
 
     def setup_geodf(self, shapefile_path):
         self.geodf = gpd.read_file(shapefile_path)
-        self.geodf = self.geodf.dissolve(by="GID_0")
 
         areadf = self.geodf.to_crs("EPSG:6933")  # For accurate area, an equal-area projection is used
         self.areas = areadf.geometry.area

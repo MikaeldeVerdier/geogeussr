@@ -12,7 +12,7 @@ class Evaluator:
             "refinement_base": test_cfg.refinement_base
         }
 
-        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
+        self.dataset_handler = DatasetHandler(test_cfg.dataset_path, 1, 1, test_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs, shapefile_path=test_cfg.shapefile_path)
 
     def great_circle_distance(self, lat1, lng1, lat2, lng2, r):
         dlat = lat2 - lat1
@@ -45,7 +45,7 @@ class Evaluator:
         }
 
         region_results = []
-        distance_results = []  # TODO: Visualize this with a distribution
+        distance_results = []
         generator = self.dataset_handler.create_generator(test_cfg.image_size, test_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(test_cfg.iteration_amount):
             inputs, gt = next(generator)

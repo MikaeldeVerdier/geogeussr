@@ -14,7 +14,6 @@ class SampleVisualizer:
         self.save_path = save_path
 
         self.geodf = gpd.read_file(shapefile_path)
-        self.geodf = self.geodf.dissolve()
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
 

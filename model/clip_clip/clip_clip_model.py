@@ -12,7 +12,7 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
             self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
 
     @classmethod
-    def from_loaded(cls, load_path, **kwargs):
+    def from_save(cls, load_path, **kwargs):
         return cls(load_path=load_path, **kwargs)
 
     def infer(self, inputs, ret_np=False):

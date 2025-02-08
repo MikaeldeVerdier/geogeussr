@@ -12,7 +12,7 @@ class StreetCLIP(Model):  # this class is kinda useless, just uses clip_model ba
             self.clip_model = TFCLIPModel.from_pretrained("geolocal/StreetCLIP", from_pt=True)
 
     @classmethod
-    def from_loaded(cls, load_path, **kwargs):
+    def from_save(cls, load_path, **kwargs):
         return cls(load_path=load_path, **kwargs)
 
     def infer(self, inputs, ret_np=False):

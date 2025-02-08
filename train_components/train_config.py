@@ -12,15 +12,15 @@ region_path = "data/country_data.json"
 regions = load_json(region_path)
 used_regions = None  # None -> all
 
-dataset_path = "data/datasets/dataset10"
-iteration_amount = 10
-batch_size = 8
-validation_split = 0.2
-save_ratio = 0.5
+dataset_path = "data/datasets/dataset_100k"
+iteration_amount = 180_000
+batch_size = 2
+validation_split = 0
+save_ratio = 0.05
 save_dir = "save_folder"
 
 # Optimizer config
-initial_learning_rate = 1e-6
+initial_learning_rate = 1e-4
 decay_steps = 1000
 decay_factor = 0.95
 beta_1 = 0.9

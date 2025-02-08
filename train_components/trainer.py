@@ -37,7 +37,7 @@ class Trainer:
         return model_checkpoint_callback
 
     def train(self, model, load=False):
-        optimizer = self.build_optimizer(train_cfg.initial_learning_rate, train_cfg.decay_steps, train_cfg.decay_factor, train_cfg.beta_1, train_cfg.beta_2, train_cfg.weight_decay)
+        optimizer = self.build_optimizer(**train_cfg.optimizer_config)
         model.compile(optimizer=optimizer, loss=ContrastiveLoss())
 
         save_interval = int(train_cfg.iteration_amount * train_cfg.save_ratio)

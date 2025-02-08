@@ -22,7 +22,7 @@ class ValidationVisualizer:
         if len(correct_dists) and len(incorrect_dists):
             plt.hist([correct_dists, incorrect_dists], bins=bins, density=plot_density, color=["green", "red"], label=["Correct Region", "Incorrect Region"], alpha=0.7)
         elif len(correct_dists):
-            plt.hist(correct_dists, bins=bins, density=plot_density, color="green", label="Correct Region", alpha=0.7)
+            plt.hist(correct_dists, bins=bins, density=plot_density, color="green", label="Correct Region", alpha=0.7)  # Could determine alpha based on confidence
         elif len(incorrect_dists):
             plt.hist(incorrect_dists, bins=bins, density=plot_density, color="red", label="Incorrect Region", alpha=0.7)
 
@@ -37,6 +37,8 @@ class ValidationVisualizer:
         plt.tight_layout()
 
         plt.savefig(self.save_path)
+
+        plt.close()
 
 
 if __name__ == "__main__":

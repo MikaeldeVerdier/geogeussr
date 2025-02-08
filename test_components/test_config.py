@@ -14,3 +14,5 @@ shapefile_path = "data/dissolved_gadm.gpkg"  # None
 
 refinement_base = 0.5
 refinement_steps = 0
+
+test_save_path = "save_folder/test_results.json"

@@ -27,6 +27,9 @@ class Inferencer:
 
             logits_per_image = model(inputs, ret_np=True)
 
+            if refinement_level == 0:
+                first_sim_matrix = self.dataset_handler.softmax(logits_per_image[0])
+
             if not use_com:
                 best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, used_prompts)
                 print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
@@ -45,4 +48,4 @@ class Inferencer:
             if not process_first:
                 inputs, _ = self.dataset_handler.preprocessor([], self.image_size, passed_processed_images=img, passed_prompts=used_prompts)
 
-        return best_prompt
+        return best_prompt, first_sim_matrix

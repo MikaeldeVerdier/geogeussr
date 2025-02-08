@@ -13,9 +13,7 @@ class SampleVisualizer:
     def __init__(self, save_path=viz_cfg.save_path, shapefile_path=viz_cfg.shapefile_path):
         self.save_path = save_path
 
-        self.geodf = gpd.read_file(shapefile_path)
-        if self.geodf.crs != "EPSG:4326":
-            self.geodf = self.geodf.to_crs("EPSG:4326")
+        self.load_gadm(shapefile_path)
 
     """
     def get_points(self, df):
@@ -31,6 +29,11 @@ class SampleVisualizer:
 
         return points
     """
+
+    def load_gadm(self, shapefile_path):
+        self.geodf = gpd.read_file(shapefile_path)
+        if self.geodf.crs != "EPSG:4326":
+            self.geodf = self.geodf.to_crs("EPSG:4326")
 
     def generate_heatmap(self, points, s, b):
         heatmap, x_edges, y_edges = np.histogram2d(points[:, 0], points[:, 1], bins=b)  # doesn't histo across world's edge

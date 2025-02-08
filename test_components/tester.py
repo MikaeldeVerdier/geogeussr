@@ -1,5 +1,6 @@
 import test_components.test_config as test_config
 from shared_components.inferencer import Inferencer
+from shared_components.files import save_json
 
 class Tester:
     def __init__(self, processor_method="Geo"):
@@ -9,4 +10,14 @@ class Tester:
         used_prompts = self.inferencer.dataset_handler.preprocessor.get_prompts()
         image = self.inferencer.dataset_handler.preprocessor.get_image(image_path, test_config.image_size)[None]
 
-        self.inferencer.infer(model, used_prompts, image=image, use_com=use_com)
+        best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, image=image, use_com=use_com)
+
+        prompt_components = self.inferencer.dataset_handler.preprocessor.get_components(used_prompts)
+        best_prompt_components = self.inferencer.dataset_handler.preprocessor.get_components(best_prompt)[0]
+        test_results = {
+            "prompts": prompt_components,
+            "image": image[0].tolist(),
+            "confs": sim_matrix.tolist(),
+            "best_prompt": best_prompt_components
+        }
+        save_json(test_results, test_config.test_save_path)  # could append image_path to the save path

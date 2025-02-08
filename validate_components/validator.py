@@ -42,11 +42,11 @@ class Validator:
         region_results = []
         distance_results = []
         generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, processor_kwargs=process_kwargs)
-        for _ in range(val_cfg.iteration_amount):
+        for _ in range(val_cfg.iteration_amount):  # could process all the 1st refinement level promp images at once
             inputs, gt = next(generator)
             used_prompts = prompts
 
-            best_prompt = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
+            best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
 
             print(f"Correct answer: {gt}")
 

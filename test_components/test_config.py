@@ -13,8 +13,4 @@ used_regions = None
 shapefile_path = "data/dissolved_gadm.gpkg"  # None
 
 refinement_base = 0.5
-refinement_steps = 1
-dataset_path = "data/datasets/dataset10"
-iteration_amount = 10
-
-test_results_path = "save_folder/test_results.json"
+refinement_steps = 0

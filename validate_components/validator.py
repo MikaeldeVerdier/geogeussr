@@ -1,0 +1,71 @@
+from math import radians, sin, cos, sqrt, atan2
+
+import validate_components.validator_config as val_cfg
+from shared_components.inferencer import Inferencer
+from shared_components.files import save_json
+
+class Validator:
+    def __init__(self, processor_method="Geo"):
+        self.inferencer = Inferencer(val_cfg.image_size, val_cfg.tokens_len, val_cfg.refinement_base, val_cfg.refinement_steps, val_cfg.dataset_path, val_cfg.regions, val_cfg.shapefile_path, processor_method=processor_method)
+
+    def great_circle_distance(self, lat1, lng1, lat2, lng2, r):
+        dlat = lat2 - lat1
+        dlon = lng2 - lng1
+
+        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        distance = r * c
+
+        return distance
+
+    def evaluate_result(self, pred, gt):
+        comp_pred = self.inferencer.dataset_handler.preprocessor.get_components([pred])[0]
+        comp_gt = self.inferencer.dataset_handler.preprocessor.get_components([gt])[0]
+        
+        correct_region = comp_pred[0] == comp_gt[0]
+
+        R = 6371.0  # Earth's radius in km
+        lat1, lng1, lat2, lng2 = map(radians, comp_pred[1:] + comp_gt[1:])
+        distance = self.great_circle_distance(lat1, lng1, lat2, lng2, r=R)  # (km)
+
+        return correct_region, distance
+
+
+    def validate(self, model, use_com=False):
+        # prompts = self.get_prompts()
+        prompts = self.inferencer.dataset_handler.preprocessor.get_prompts()
+        process_kwargs = {
+            "passed_prompts": prompts
+        }
+
+        region_results = []
+        distance_results = []
+        generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, processor_kwargs=process_kwargs)
+        for _ in range(val_cfg.iteration_amount):
+            inputs, gt = next(generator)
+            used_prompts = prompts
+
+            best_prompt = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
+
+            print(f"Correct answer: {gt}")
+
+            correct_region, distance = self.evaluate_result(best_prompt[0], gt[0])
+            region_results.append(correct_region)
+            distance_results.append(distance)
+
+            print(f"Country is {'correct' if correct_region else 'incorrect'}.")
+            print(f"Distance is {distance:.2f}km.")
+
+        print("Total results:")
+
+        region_accuracy = sum(map(int, region_results)) / len(region_results)
+        mean_distance = sum(distance_results) / len(distance_results)
+        print(f"Country was correct {region_accuracy * 100:}% of the time.")
+        print(f"Average distance was {mean_distance:.2f}km.")
+
+        validation_results = {
+            "correct_regions": region_results,
+            "distances": distance_results
+        }
+        save_json(validation_results, val_cfg.vaidation_results_path)

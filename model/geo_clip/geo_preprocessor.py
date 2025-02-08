@@ -21,7 +21,7 @@ class GeoPreprocessor(Preprocessor):
         y_batch = []
         for annotation in chosen_annotations:
             if passed_processed_images is None and passed_images is None:
-                x1 = self.encode_image(annotation["image_name"], image_shape)
+                x1 = self.get_image(annotation["image_name"], image_shape)
                 x1_batch.append(x1)
 
             if passed_prompts is None:
@@ -42,7 +42,7 @@ class GeoPreprocessor(Preprocessor):
 
         return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
 
-    def encode_image(self, image_name, input_shape):
+    def get_image(self, image_name, input_shape):
         image_path = os.path.join(self.dataset_path, image_name)
 
         img = cv2.imread(image_path)

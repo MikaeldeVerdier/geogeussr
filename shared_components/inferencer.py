@@ -33,7 +33,7 @@ class Inferencer:
             logits_per_image = model(inputs, ret_np=True)
 
             if refinement_level == 0:
-                first_sim_matrix = self.dataset_handler.softmax(logits_per_image[0])
+                first_sim_matrix = self.dataset_handler.softmax(logits_per_image)
 
             if not use_com:
                 best_prompt, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, used_prompts)
@@ -60,7 +60,7 @@ class Inferencer:
         best_prompt_components = self.dataset_handler.preprocessor.get_components([best_prompt])[0]
         inference_results = {
             "prompts": prompt_components,
-            "image": image[0].tolist(),
+            "image": image.tolist(),
             "confs": sim_matrix.tolist(),
             "best_prompt": best_prompt_components
         }

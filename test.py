@@ -15,26 +15,26 @@ if __name__ == "__main__":
     # street_clip = StreetCLIP()
     # tester = Tester(processor_method="Street")
 
-    # tester.test(street_clip, "test.png")
+    # tester.test(street_clip)
 
 
     # # Test a StreetCLIP model with original prompt format
     # street_clip = StreetCLIP()
     # tester = Tester(processor_method="StreetOG")
 
-    # tester.test(street_clip, "test.png")
+    # tester.test(street_clip)
 
 
     # # Test a ClipCLIP model with new prompt format
     # clip_clip = ClipCLIP(load_path="GeoCLIP/model")
     # tester = Tester(processor_method="Clip")
 
-    # tester.test(clip_clip, "test.png")
+    # tester.test(clip_clip)
 
 
     # # Test a ClipCLIP model with original prompt format
     # clip_clip = ClipCLIP()
     # tester = Tester(processor_method="ClipOG")
 
-    # tester.test(clip_clip, "test.png")
+    # tester.test(clip_clip)
 

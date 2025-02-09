@@ -22,14 +22,14 @@ class ClipPreprocessorOriginal(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
-        images = [] if passed_processed_images is None else None
+        images = [] if passed_processed_images is None and passed_images is None else None
         locations = [] if passed_prompts is None else passed_prompts
         for annotation in chosen_annotations:
-            if passed_processed_images is None:
+            if passed_processed_images is None and passed_images is None:
                 image = self.get_image(annotation["image_name"], image_shape)
                 images.append(image)
 
@@ -40,6 +40,9 @@ class ClipPreprocessorOriginal(Preprocessor):
             y = self.generate_description(annotation["location"])
             y_batch.append(y)
 
+        if passed_images is not None:
+            images = passed_images
+
         if passed_prompts is not None:
             locations = self.encode_texts(locations)
 
@@ -48,7 +51,16 @@ class ClipPreprocessorOriginal(Preprocessor):
         if passed_processed_images is not None:
             x_batch["pixel_values"] = passed_processed_images
 
-        return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
+        if not len(rets):
+            return x_batch, np.array(y_batch)
+
+        ret_data = []
+        if "raw_images" in rets:
+            ret_data.append(images)
+        if "raw_locations" in rets:
+            ret_data.append(locations)
+
+        return x_batch, np.array(y_batch), ret_data
 
     def process(self, image_input, text_input):
         processed = self.clip_processor(text=text_input, images=image_input, return_tensors="np", padding=True)

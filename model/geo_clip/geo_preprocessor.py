@@ -15,7 +15,7 @@ class GeoPreprocessor(Preprocessor):
             ((max_len,), int)  # pretty sure this one can't be None
         )
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
+    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
         x1_batch = [] if passed_processed_images is None and passed_images is None else None  # will do it for any falsy value...
         x2_batch = [] if passed_prompts is None else passed_prompts
         y_batch = []
@@ -40,7 +40,16 @@ class GeoPreprocessor(Preprocessor):
         if passed_images is not None:
             x1_batch = passed_images
 
-        return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)  # y_true not used, but is just GT description
+        if not len(rets):
+            return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)
+
+        ret_data = []
+        if "raw_images" in rets:
+            ret_data.append(x1_batch)
+        if "raw_locations" in rets:
+            ret_data.append(x2_batch)
+
+        return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch), ret_data  # y_true not used, but is just GT description, ret_data
 
     def get_image(self, image_name, input_shape):
         image_path = os.path.join(self.dataset_path, image_name)

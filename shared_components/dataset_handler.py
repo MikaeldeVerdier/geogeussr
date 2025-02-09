@@ -57,12 +57,12 @@ class DatasetHandler:
 
         return region_annotations
 
-    def create_generator(self, image_shape, region_names, processor_kwargs={}):
+    def create_generator(self, image_shape, region_names, rets=[], processor_kwargs={}):
         while True:
             region_annotations = self.get_region_annotations(region_names)
             chosen_annotations = random.sample(region_annotations, min(self.batch_size, len(region_annotations)))
 
-            yield self.preprocessor(chosen_annotations, image_shape, **processor_kwargs)
+            yield self.preprocessor(chosen_annotations, image_shape, rets=rets, **processor_kwargs)
 
     def create_tensor_spec(self, shape, dtype):
         dtype_map = {

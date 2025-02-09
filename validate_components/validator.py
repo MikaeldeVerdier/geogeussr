@@ -35,7 +35,8 @@ class Validator:
 
     def validate(self, model, use_com=False):
         # prompts = self.get_prompts()
-        if val_cfg.inference_results_path is not None and not os.path.exists(val_cfg.inference_results_path):
+        save_inference_data = val_cfg.inference_results_path is not None
+        if save_inference_data and not os.path.exists(val_cfg.inference_results_path):
             os.mkdir(val_cfg.inference_results_path)
 
         prompts = self.inferencer.dataset_handler.preprocessor.get_prompts()
@@ -43,19 +44,24 @@ class Validator:
             "passed_prompts": prompts
         }
 
+        rets = ["raw_images"] if save_inference_data else []
+        generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, rets=rets, processor_kwargs=process_kwargs)
+        
         region_results = []
         distance_results = []
-        generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, processor_kwargs=process_kwargs)
         for _ in range(val_cfg.iteration_amount):  # could process all the 1st refinement level promp images at once
-            inputs, gt = next(generator)
+            if not len(rets):
+                inputs, gt = next(generator)
+            else:
+                inputs, gt, ret_values = next(generator)
             used_prompts = prompts
 
             best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
 
-            if val_cfg.inference_results_path is not None:
-                image = self.inferencer.dataset_handler.preprocessor.find_image(inputs)
+            if save_inference_data is not None:
+                image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
                 inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
-                self.inferencer.save_inference(used_prompts, image, best_prompt[0], sim_matrix, inference_name, correct_prompt=gt[0])
+                self.inferencer.save_inference(used_prompts, image, best_prompt[0], sim_matrix[0], inference_name, correct_prompt=gt[0])
 
             print(f"Correct answer: {gt}")
 

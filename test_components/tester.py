@@ -16,7 +16,7 @@ class Tester:
 
         best_prompt, sim_matrix = self.inferencer.infer(model, prompts, image=image, use_com=use_com)
         inference_name = os.path.join(test_config.inference_save_path, f"inference_{os.path.basename(image_path).replace('.png', '')}.json")
-        self.inferencer.save_inference(prompts, image, best_prompt[0], sim_matrix, inference_name)
+        self.inferencer.save_inference(prompts, image[0], best_prompt[0], sim_matrix[0], inference_name)
 
     def test(self, model, use_com=False):
         if test_config.data_file is not None and os.path.exists(test_config.data_file):

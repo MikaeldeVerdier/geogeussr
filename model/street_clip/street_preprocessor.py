@@ -20,7 +20,7 @@ class StreetPreprocessor(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
@@ -49,7 +49,16 @@ class StreetPreprocessor(Preprocessor):
         if passed_processed_images is not None:  # weird because this means that passed_prompts are not processed but passed_images are
             x_batch["pixel_values"] = passed_processed_images
 
-        return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
+        if not len(rets):
+            return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
+
+        ret_data = []
+        if "raw_images" in rets:
+            ret_data.append(images)
+        if "raw_locations" in rets:
+            ret_data.append(locations)
+
+        return x_batch, np.array(y_batch), ret_data
 
     def process(self, image_input, text_input):
         processed = self.clip_processor(text=list(text_input), images=image_input, return_tensors="np", padding=True)

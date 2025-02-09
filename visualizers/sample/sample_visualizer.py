@@ -130,7 +130,7 @@ class SampleVisualizer:
             used_points = np.load(points_path)
 
         if animate:
-            animation_path = f"ani_sampling_refined_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.mp4"
+            animation_path = f"ani_sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.mp4"
             self.animate_sampling(np_points, used_points, animation_path)
         else:
             image_path = f"sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"

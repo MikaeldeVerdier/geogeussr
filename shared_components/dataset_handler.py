@@ -57,10 +57,17 @@ class DatasetHandler:
 
         return region_annotations
 
-    def create_generator(self, image_shape, region_names, rets=[], processor_kwargs={}):
+    def create_generator(self, image_shape, region_names, shuffle=True, rets=[], processor_kwargs={}):
+        i = 0
+
         while True:
             region_annotations = self.get_region_annotations(region_names)
-            chosen_annotations = random.sample(region_annotations, min(self.batch_size, len(region_annotations)))
+            if shuffle:
+                chosen_annotations = random.sample(region_annotations, min(self.batch_size, len(region_annotations)))
+            else:
+                chosen_annotations = [region_annotations[j % len(region_annotations)] for j in range(i, i + self.batch_size)]
+
+            i += 1
 
             yield self.preprocessor(chosen_annotations, image_shape, rets=rets, **processor_kwargs)
 

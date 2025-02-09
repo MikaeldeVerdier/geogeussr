@@ -15,6 +15,7 @@ shapefile_path = "data/dissolved_gadm.gpkg"  # None
 refinement_base = 0.5
 refinement_steps = 1
 dataset_path = "data/datasets/dataset10"
+shuffle = False
 iteration_amount = 10
 
 vaidation_results_path = "save_folder/validation_results.json"

@@ -45,7 +45,7 @@ class Validator:
         }
 
         rets = ["raw_images"] if save_inference_data else []
-        generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, rets=rets, processor_kwargs=process_kwargs)
+        generator = self.inferencer.dataset_handler.create_generator(val_cfg.image_size, val_cfg.used_regions, shuffle=val_cfg.shuffle, rets=rets, processor_kwargs=process_kwargs)
         
         region_results = []
         distance_results = []

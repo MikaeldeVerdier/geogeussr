@@ -20,7 +20,7 @@ class StreetPreprocessor(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, image_shape, use_augmentation=False, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
@@ -43,6 +43,9 @@ class StreetPreprocessor(Preprocessor):
 
         if passed_prompts is not None:
             locations = self.encode_texts(locations)  # not needed, just here for continuity with other preprocessors
+
+        if self.data_augmentor is not None and use_augmentation:
+            images = self.data_augmentor(images)
 
         x_batch = self.process(images, locations)
 
@@ -73,6 +76,7 @@ class StreetPreprocessor(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
+        img = img[..., ::-1]  # convert to rgb
 
         return img
 

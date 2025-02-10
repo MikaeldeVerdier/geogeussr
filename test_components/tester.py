@@ -24,4 +24,6 @@ class Tester:
         elif test_config.data_dir is not None:
             for file in os.listdir(test_config.data_dir):
                 if file.endswith(".png"):
+                    print(f"Testing: {file}")
+
                     self.perform_test(model, os.path.join(test_config.data_dir, file), use_com=use_com)  # nested!

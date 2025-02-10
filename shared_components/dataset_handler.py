@@ -5,6 +5,7 @@ import geopandas as gpd
 from tensorflow.data import Dataset
 from shapely import Point
 
+from train_components.data_augmentor import DataAugmentor
 from model.geo_clip.geo_preprocessor import GeoPreprocessor
 from model.street_clip.street_preprocessor import StreetPreprocessor
 from model.street_clip.street_preprocessor_original import StreetPreprocessorOriginal
@@ -13,21 +14,24 @@ from model.clip_clip.clip_preprocessor_original import ClipPreprocessorOriginal
 from shared_components.files import load_annotations
 
 class DatasetHandler:
-    def __init__(self, dataset_path, split, batch_size, regions, processor_method="Geo", processor_kwargs={}, shapefile_path=None):
+    def __init__(self, dataset_path, image_size, split, batch_size, regions, data_augmentor_kwargs={}, processor_method="Geo", processor_kwargs={}, shapefile_path=None):
         self.dataset_path = dataset_path
+        self.image_size = image_size
         self.batch_size = batch_size
         self.regions = regions
 
+        self.data_augmentor = DataAugmentor(image_size, **data_augmentor_kwargs)
+
         if processor_method == "Street":
-            self.preprocessor = StreetPreprocessor(dataset_path, regions, **processor_kwargs)
+            self.preprocessor = StreetPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
         elif processor_method == "StreetOG":
             self.preprocessor = StreetPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
         elif processor_method == "Clip":
-            self.preprocessor = ClipPreprocessor(dataset_path, regions, **processor_kwargs)
+            self.preprocessor = ClipPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
         elif processor_method == "ClipOG":
-            self.preprocessor = ClipPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
+            self.preprocessor = ClipPreprocessorOriginal(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
         else:
-            self.preprocessor = GeoPreprocessor(dataset_path, regions, **processor_kwargs)
+            self.preprocessor = GeoPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
 
         loaded_annotations = load_annotations(dataset_path)
         share = int(len(loaded_annotations) * split)
@@ -57,7 +61,7 @@ class DatasetHandler:
 
         return region_annotations
 
-    def create_generator(self, image_shape, region_names, shuffle=True, rets=[], processor_kwargs={}):
+    def create_generator(self, image_shape, region_names, shuffle=True, use_augmentation=False, rets=[], processor_kwargs={}):
         i = 0
 
         while True:
@@ -69,7 +73,7 @@ class DatasetHandler:
 
             i += 1
 
-            yield self.preprocessor(chosen_annotations, image_shape, rets=rets, **processor_kwargs)
+            yield self.preprocessor(chosen_annotations, image_shape, use_augmentation=use_augmentation, rets=rets, **processor_kwargs)
 
     def create_tensor_spec(self, shape, dtype):
         dtype_map = {
@@ -90,7 +94,7 @@ class DatasetHandler:
         elif isinstance(output_shapes, dict):
             return {k: self.create_tensor_spec(v, d) for k, (v, d) in output_shapes.items()} 
 
-    def create_dataset(self, image_shape, region_names, processor_kwargs={}):
+    def create_dataset(self, region_names, shuffle=False, use_augmentation=False, rets=[], processor_kwargs={}):
         region_annotations = self.get_region_annotations(region_names)  # unecessarily calculated independently twice
         used_batch_size = min(self.batch_size, len(region_annotations))
         if used_batch_size == 0:
@@ -98,7 +102,7 @@ class DatasetHandler:
         
         # return self.create_generator(image_size, preprocess_function, region_name, y_index)
 
-        generator = lambda: self.create_generator(image_shape, region_names, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
+        generator = lambda: self.create_generator(self.image_size, region_names, shuffle=shuffle, use_augmentation=use_augmentation, rets=rets, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
         output_signature = self.get_output_signature(self.preprocessor.output_shapes)
         dataset = Dataset.from_generator(
             generator,

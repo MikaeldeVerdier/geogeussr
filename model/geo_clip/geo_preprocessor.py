@@ -15,7 +15,7 @@ class GeoPreprocessor(Preprocessor):
             ((max_len,), int)  # pretty sure this one can't be None
         )
 
-    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
+    def __call__(self, chosen_annotations, image_shape, use_augmentation=False, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # a bit weird to have from annotations as the format but
         x1_batch = [] if passed_processed_images is None and passed_images is None else None  # will do it for any falsy value...
         x2_batch = [] if passed_prompts is None else passed_prompts
         y_batch = []
@@ -40,6 +40,14 @@ class GeoPreprocessor(Preprocessor):
         if passed_images is not None:
             x1_batch = passed_images
 
+        if self.data_augmentor is not None and use_augmentation:
+            x1_batch = self.data_augmentor(x1_batch)
+
+        from PIL import Image
+        for i, image in enumerate(x1_batch):
+            image = Image.fromarray((image[..., ::-1] * 255).astype(np.uint8))
+            image.save(f"test_{i}.png")
+
         if not len(rets):
             return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)
 
@@ -56,6 +64,7 @@ class GeoPreprocessor(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
+        img = img[..., ::-1]
 
         return img / 255.0
 

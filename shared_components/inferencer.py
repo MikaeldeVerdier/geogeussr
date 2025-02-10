@@ -17,7 +17,7 @@ class Inferencer:
             "refinement_base": refinement_base
         }
 
-        self.dataset_handler = DatasetHandler(dataset_path, 1, 1, regions, processor_method=processor_method, processor_kwargs=processor_kwargs, shapefile_path=shapefile_path)
+        self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, regions, processor_method=processor_method, processor_kwargs=processor_kwargs, shapefile_path=shapefile_path)
 
     def infer(self, model, used_prompts, inputs=None, image=None, use_com=False):
         process_first = inputs is None and image is not None

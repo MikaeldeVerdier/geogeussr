@@ -11,6 +11,7 @@ tokens_len = max_len
 region_path = "data/country_data.json"
 regions = load_json(region_path)
 used_regions = None  # None -> all
+use_augmentation = True
 
 dataset_path = "data/datasets/dataset_100k"
 iteration_amount = 180_000
@@ -21,7 +22,7 @@ save_dir = "save_folder"
 
 # Optimizer config
 optimizer_config = {
-    "initial_learning_rate": 1e-4,
+    "initial_lr": 1e-4,
     "decay_steps": 1000,
     "decay_factor": 0.95,
     "beta_1": 0.9,

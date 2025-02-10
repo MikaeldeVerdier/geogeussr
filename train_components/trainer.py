@@ -17,12 +17,12 @@ class Trainer:
             "max_len": train_cfg.max_len
         }
 
-        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, 1 - train_cfg.validation_split, train_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
-        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, -train_cfg.validation_split, val_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
+        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, 1 - train_cfg.validation_split, train_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
+        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, -train_cfg.validation_split, val_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 
-    def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2, weight_decay):
+    def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2, weight_decay, **kwargs):
         schedule = ExponentialDecay(initial_lr, decay_steps, decay_factor, staircase=True)
         # optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2, weight_decay=weight_decay)
         optimizer = SGD(learning_rate=schedule, momentum=beta_1, weight_decay=weight_decay)
@@ -46,8 +46,8 @@ class Trainer:
         start_iteration = callback.get_epoch()
         end_iteration = start_iteration + train_cfg.iteration_amount
 
-        train_dataset = self.train_dataset_handler.create_dataset(train_cfg.image_size, train_cfg.used_regions)
-        validation_dataset = self.val_dataset_handler.create_dataset(train_cfg.image_size, train_cfg.used_regions)
+        train_dataset = self.train_dataset_handler.create_dataset(train_cfg.used_regions, use_augmentation=train_cfg.use_augmentation)
+        validation_dataset = self.val_dataset_handler.create_dataset(train_cfg.used_regions, use_augmentation=False)  # no augmentation
 
         print(f"Training {train_cfg.name} for {train_cfg.iteration_amount} iterations")
         model.fit(

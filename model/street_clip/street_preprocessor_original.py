@@ -20,7 +20,7 @@ class StreetPreprocessorOriginal(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could unify with other clip preprocessors
+    def __call__(self, chosen_annotations, image_shape, use_augmentation=False, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could unify with other clip preprocessors
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
@@ -43,6 +43,9 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         if passed_prompts is not None:
             locations = self.encode_texts(locations)
+
+        if self.data_augmentor is not None and use_augmentation:
+            images = self.data_augmentor(images)
 
         x_batch = self.process(images, locations)
 
@@ -71,6 +74,7 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         img = cv2.imread(image_path)
         img = cv2.resize(img, input_shape[:-1])
+        img = img[..., ::-1]
 
         return img
 

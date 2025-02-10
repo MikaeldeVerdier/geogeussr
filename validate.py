@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 
     # # Validate a ClipCLIP model with new prompt format
-    # clip_clip = ClipCLIP()
+    # clip_clip = ClipCLIP()  # .from_save("save_folder_GeoCLIP v1/model")
     # validator = Validator(processor_method="Clip")
 
     # validator.validate(clip_clip)

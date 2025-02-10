@@ -1,8 +1,9 @@
 import numpy as np
 
 class Preprocessor:
-    def __init__(self, regions, refinement_base=0.1, **kwargs):
+    def __init__(self, regions, data_augmentor=None, refinement_base=0.1, **kwargs):
         self.regions = regions
+        self.data_augmentor = data_augmentor
         self.refinement_base = refinement_base
 
     def get_region(self, key, value):

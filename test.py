@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 
     # # Test a ClipCLIP model with new prompt format
-    # clip_clip = ClipCLIP(load_path="GeoCLIP/model")
+    # clip_clip = ClipCLIP.from_save("save_folder_GeoCLIP v1/model")
     # tester = Tester(processor_method="Clip")
 
     # tester.test(clip_clip)

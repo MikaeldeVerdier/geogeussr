@@ -19,8 +19,8 @@ class DataAugmentor:  # inspired by https://github.com/MikaeldeVerdier/mahjong/b
             self.crop,
             self.horizontal_flip,
             self.rotate,
-            self.perspective_warp,
-            self.homography_transform,
+            # self.perspective_warp,
+            # self.homography_transform,
             self.motion_blur,
             self.resize
         ]
@@ -36,7 +36,7 @@ class DataAugmentor:  # inspired by https://github.com/MikaeldeVerdier/mahjong/b
 
         return augmented_images
 
-    def random_expand(self, lower_bound=1, upper_bound=2, background_color=[0, 0, 0], p=0.5):
+    def random_expand(self, lower_bound=1, upper_bound=1.5, background_color=[0, 0, 0], p=0.5):
         def transform(image):
             if np.random.rand() > p:
                 return image
@@ -58,7 +58,7 @@ class DataAugmentor:  # inspired by https://github.com/MikaeldeVerdier/mahjong/b
         return transform
 
 
-    def random_crop(self, min_scale=0.5, max_scale=1, min_ar=0.5, max_ar=2):
+    def random_crop(self, min_scale=0.8, max_scale=1, min_ar=0.5, max_ar=2):
         def transform(image):
             height, width, _ = image.shape
 
@@ -95,7 +95,7 @@ class DataAugmentor:  # inspired by https://github.com/MikaeldeVerdier/mahjong/b
 
         return transform
 
-    def random_rotate(self, min_angle=0, max_angle=45, p=0.5):
+    def random_rotate(self, min_angle=0, max_angle=30, p=0.5):
         def transform(image):
             if np.random.rand() > p:
                 return image
@@ -162,7 +162,7 @@ class DataAugmentor:  # inspired by https://github.com/MikaeldeVerdier/mahjong/b
 
         return transform
 
-    def random_motion_blur(self, min_kernel_size=1, max_kernel_size=10, p=0.5):
+    def random_motion_blur(self, min_kernel_size=1, max_kernel_size=5, p=0.5):
         def transform(image):
             if np.random.rand() > p:
                 return image

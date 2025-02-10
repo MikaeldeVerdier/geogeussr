@@ -32,7 +32,7 @@ class InferenceVisualizer:
             self.geodf = self.geodf.to_crs("EPSG:4326")
 
     def plot_image(self, ax, image):
-        ax.imshow(image[..., ::-1])  # shows the image the model used (aka resized to (336x336))
+        ax.imshow(image)  # shows the image the model used (aka resized to (336x336))
         ax.set_title("Image", fontsize=20)
         ax.axis("off")
 

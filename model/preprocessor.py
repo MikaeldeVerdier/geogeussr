@@ -7,9 +7,11 @@ class Preprocessor:
         self.refinement_base = refinement_base
 
     def get_region(self, key, value):
-        region_data = [region for region in self.regions if region[key] == value][0]
+        region_data = [region for region in self.regions if region[key] == value]
+        if not len(region_data):
+            return None
 
-        return region_data
+        return region_data[0]
 
     def get_region_index(self, key, value):
         region_index = [i for i, region in enumerate(self.regions) if region[key] == value][0]

@@ -22,10 +22,15 @@ class CountryDataGenerator:
     def prepare_geodf(self, gpkg_path):
         self.geodf = gpd.read_file(gpkg_path)
         if self.geodf.crs != "EPSG:3857":
-            self.geodf = self.geodf.to_crs("EPSG:3857")
+            self.geodf = self.geodf.to_crs("EPSG:3857")  # why 3857? it's not mercator...
+
+        self.geodf.set_index("GID_0", inplace=True)
 
     def get_countries(self):
-        return (self.geodf.index.tolist(), self.geodf["NAME_0"].values.tolist())
+        codes = self.geodf.index.tolist()
+        names = self.geodf["NAME_0"].values.tolist()
+
+        return (codes, names)
 
     def get_cities(self, country_df, country_name=None):
         if country_df.empty:
@@ -66,16 +71,25 @@ class CountryDataGenerator:
 
         return [origin_point.x, origin_point.y]  # Longitude, Latitude
 
-    def get_bordering_countries(self, country_geodf, country_name=None):  # is only direct borders, not ocean borders
+    def get_bordering_countries(self, country_geodf, buffer_amount=1e-3, country_name=None):  # is only direct borders, not ocean borders
         if country_geodf.empty:
             print(f"Bordering countries not found for {country_name}!")
 
             return []
-        
-        bordering_countries = self.geodf[self.geodf.geometry.touches(country_geodf.geometry, align=True)]
-        print(bordering_countries)
 
-        return bordering_countries.values
+        # intersects = self.geodf.geometry.intersects(country_geodf.geometry.iloc[0])
+        # neighbors = self.geodf[intersects]
+
+        # neighbors2 = self.geodf[self.geodf.geometry.touches(country_geodf.geometry.iloc[0])]
+        # m = neighbors2["NAME_0"].values
+
+        country_geom = country_geodf.geometry.iloc[0].buffer(buffer_amount)
+        bordering_countries = self.geodf[self.geodf.geometry.intersects(country_geom, align=True)]
+        # print(bordering_countries)
+        bordering_country_codes = bordering_countries.index.values.tolist()
+        bordering_country_codes.remove(country_geodf.index.values[0])
+
+        return bordering_country_codes
 
     def generate_data(self):
         country_codes, country_names = self.get_countries()

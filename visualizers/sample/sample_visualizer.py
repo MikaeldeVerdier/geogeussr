@@ -35,15 +35,15 @@ class SampleVisualizer:
         if self.geodf.crs != "EPSG:4326":
             self.geodf = self.geodf.to_crs("EPSG:4326")
 
-    def generate_heatmap(self, points, s, b):
-        heatmap, x_edges, y_edges = np.histogram2d(points[:, 0], points[:, 1], bins=b)  # doesn't histo across world's edge
-        heatmap = gaussian_filter(heatmap, sigma=s)
+    def generate_heatmap(self, points, smoothing, bins, plot_density):
+        heatmap, x_edges, y_edges = np.histogram2d(points[:, 0], points[:, 1], bins=bins, density=plot_density)  # doesn't histo across world's edge
+        heatmap = gaussian_filter(heatmap, sigma=smoothing)
 
         # extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 
         return heatmap.T
 
-    def plot_sampling(self, points, file_name, smoothing, bins, normalize_heatmap, show_map, show_points):
+    def plot_sampling(self, points, file_name, smoothing, bins, plot_density, normalize_heatmap, show_map, show_points):
         if show_map:
             ax = self.geodf.plot(alpha=0.2)
 
@@ -53,7 +53,7 @@ class SampleVisualizer:
             ax = plt.gca()  # could just plot imshow first...
             extent = [-180, 180, -90, 90]
 
-        heat_map = self.generate_heatmap(points, smoothing, bins)
+        heat_map = self.generate_heatmap(points, smoothing, bins, plot_density)
         if normalize_heatmap:  # Could use a log_normalizer instead to get landmasses some color. Don't think it's worth though because coast lines should be this emphasized
             v_min = np.min(heat_map)  # will almost assuredly be 0
             v_max = np.max(heat_map)
@@ -70,7 +70,7 @@ class SampleVisualizer:
 
         heat_map_img = ax.imshow(heat_map, extent=extent, origin="lower", cmap=cmap, vmin=v_min, vmax=v_max)
         cbar = plt.colorbar(heat_map_img, location="top")
-        cbar.set_label("Sample point density (points per pixel)", rotation=0, labelpad=15)
+        cbar.set_label("Sample point density", rotation=0, labelpad=15)
 
         if show_points:
             ax.scatter(points[:, 0], points[:, 1], color="r", s=1, zorder=4)
@@ -82,20 +82,34 @@ class SampleVisualizer:
 
         plt.close()
 
-    def plot_refined_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points):
+    def plot_refined_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, plot_density=viz_cfg.plot_density, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points):
         points_path = os.path.join(self.save_path, f"{n_points}_refined_points.npy")
         if not load_points:
-            points = self.geodf.sample_points(n_points)
-            used_points = np.array([geom.coords[0] for geom in points.iloc[0].geoms])
+            bounds = self.geodf.total_bounds
+            used_points = []
+            # d = self.geodf.dissolve()
+            while len(used_points) < n_points:
+                new_lats = np.random.uniform(bounds[1], bounds[3], n_points - len(used_points))  # could absoutely optimize this a lot
+                new_lngs = np.random.uniform(bounds[0], bounds[2], n_points - len(used_points))
+                new_points = gpd.GeoSeries.from_xy(new_lngs, new_lats, crs="EPSG:4326")
+                for point in new_points:
+                    if np.any(self.geodf.contains(point)):
+                        used_points.append([point.x, point.y])
 
+            # points = self.geodf.sample_points(n_points)
+            # used_points = np.array([geom.coords[0] for geom in points.iloc[0].geoms])
+
+            used_points = np.array(used_points)
             np.save(points_path, used_points)
         else:
             used_points = np.load(points_path)
 
-        image_path = f"sampling_refined_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
-        self.plot_sampling(used_points, image_path, smoothing, bins, normalize_heatmap, show_map, show_points)
+        image_path = f"sampling_refined_{n_points}np_{smoothing}smo_{bins}b_{plot_density}pd_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
+        self.plot_sampling(used_points, image_path, smoothing, bins, plot_density, normalize_heatmap, show_map, show_points)
 
     def simulate_sampling(self, points, domain_points):
+        union_points = domain_points.unary_union
+
         used_points = []
         for point in points:
             on_land = np.any(self.geodf.contains(point))
@@ -104,12 +118,14 @@ class SampleVisualizer:
 
                 continue
 
-            nearest = nearest_points(point, domain_points)[1].values[0]
+            # a = nearest_points(point, domain_points.unary_union)
+            nearest = nearest_points(point, union_points)[1]
             used_points.append([nearest.x, nearest.y])
 
         return np.array(used_points)
 
-    def plot_naive_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points, animate=viz_cfg.animate):
+    # Does not take looping around latitudes into account
+    def plot_naive_sampling(self, load_points=viz_cfg.load_points, n_points=viz_cfg.n_points, smoothing=viz_cfg.smoothing, bins=viz_cfg.bins, plot_density=viz_cfg.plot_density, normalize_heatmap=viz_cfg.normalize_heatmap, show_map=viz_cfg.show_map, show_points=viz_cfg.show_points, animate=viz_cfg.animate):
         if not load_points or animate:  # ugly but
             n_lats = round(np.sqrt(n_points * 2 / 3))
             n_lngs = round(n_points / n_lats)
@@ -130,11 +146,11 @@ class SampleVisualizer:
             used_points = np.load(points_path)
 
         if animate:
-            animation_path = f"ani_sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.mp4"
+            animation_path = f"ani_sampling_naive_{n_points}np.mp4"
             self.animate_sampling(np_points, used_points, animation_path)
         else:
-            image_path = f"sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
-            self.plot_sampling(used_points, image_path, smoothing, bins, normalize_heatmap, show_map, show_points)
+            image_path = f"sampling_naive_{n_points}np_{smoothing}smo_{bins}b_{plot_density}pd_{normalize_heatmap}no_{show_map}shm_{show_points}shp.png"
+            self.plot_sampling(used_points, image_path, smoothing, bins, plot_density, normalize_heatmap, show_map, show_points)
 
     def animate_sampling(self, original_points, used_points, file_name, num_frames=100):
         ax = self.geodf.plot(alpha=0.2)
@@ -154,7 +170,9 @@ class SampleVisualizer:
         fig = plt.gcf()
         ani = FuncAnimation(fig, update, frames=num_frames, interval=50, blit=False)
 
+        plt.title(f"Sampling animation ({len(original_points)} points)")
         plt.axis("off")
+        plt.tight_layout()
 
         # plt.show()
         animation_path = os.path.join(self.save_path, file_name)

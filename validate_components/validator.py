@@ -58,7 +58,7 @@ class Validator:
 
             best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
 
-            if save_inference_data is not None:
+            if save_inference_data:
                 image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
                 inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
                 self.inferencer.save_inference(used_prompts, image, best_prompt[0], sim_matrix[0], inference_name, correct_prompt=gt[0])

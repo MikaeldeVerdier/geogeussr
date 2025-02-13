@@ -6,7 +6,7 @@ from tensorflow.data import Dataset
 from shapely import Point
 
 from train_components.data_augmentor import DataAugmentor
-from model.geo_clip.geo_preprocessor import GeoPreprocessor
+# from model.geo_clip.geo_preprocessor import GeoPreprocessor
 from model.street_clip.street_preprocessor import StreetPreprocessor
 from model.street_clip.street_preprocessor_original import StreetPreprocessorOriginal
 from model.clip_clip.clip_preprocessor import ClipPreprocessor

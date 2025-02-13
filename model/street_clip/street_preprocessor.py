@@ -6,8 +6,8 @@ from transformers import CLIPProcessor
 from model.preprocessor import Preprocessor
 
 class StreetPreprocessor(Preprocessor):
-    def __init__(self, dataset_path, regions, image_size=(336, 336, 3), **kwargs):
-        super().__init__(regions, **kwargs)
+    def __init__(self, dataset_path, image_size=(336, 336, 3), **kwargs):
+        super().__init__(**kwargs)
 
         self.dataset_path = dataset_path
 

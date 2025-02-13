@@ -59,9 +59,9 @@ class StreetPreprocessorOriginal(Preprocessor):
         if "raw_images" in rets:
             ret_data.append(images)
         if "raw_locations" in rets:
-            ret_data = (locations)
+            ret_data.append(locations)
 
-        return x_batch, np.array(y_batch), ret_data  # y_true not used, but is just GT description
+        return x_batch, np.array(y_batch), ret_data
 
     def process(self, image_input, text_input):
         processed = self.clip_processor(text=text_input, images=image_input, return_tensors="np", padding=True)
@@ -78,20 +78,13 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         return img
 
+    def generate_description(self, location):
+        return f"A Street View photo from {location["coding"]['country']}."
+
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
-        encoded_description = self.encode_texts([description])[0]
 
-        return encoded_description
-
-    def encode_texts(self, texts):
-        encoded_texts = []
-        for text in texts:
-            encoded_text = text.split(", latitude ")[0] + "."
-
-            encoded_texts.append(encoded_text)
-
-        return encoded_texts
+        return description
 
     """
     def decode_texts(self, encoded_texts):

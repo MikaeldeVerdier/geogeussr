@@ -35,7 +35,7 @@ class ClipPreprocessor(Preprocessor):
                 location = self.get_location(annotation["location"])
                 locations.append(location)
 
-            y = self.generate_description(annotation["location"]["coding"])
+            y = self.generate_description(annotation["location"])
             y_batch.append(y)
 
         if passed_images is not None:
@@ -81,7 +81,7 @@ class ClipPreprocessor(Preprocessor):
         return img
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
-        description = self.generate_description(location["coding"])
+        description = self.generate_description(location)
 
         return description
 

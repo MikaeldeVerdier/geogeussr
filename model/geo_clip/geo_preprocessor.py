@@ -4,6 +4,7 @@ import cv2
 
 from model.preprocessor import Preprocessor
 
+""" TODO: Fix to use granularity
 class GeoPreprocessor(Preprocessor):
     def __init__(self, dataset_path, regions, image_size=(336, 336, 3), max_len=1000, **kwargs):
         super().__init__(regions, **kwargs)
@@ -43,11 +44,6 @@ class GeoPreprocessor(Preprocessor):
         if self.data_augmentor is not None and use_augmentation:
             x1_batch = self.data_augmentor(x1_batch)
 
-        from PIL import Image
-        for i, image in enumerate(x1_batch):
-            image = Image.fromarray((image[..., ::-1] * 255).astype(np.uint8))
-            image.save(f"test_{i}.png")
-
         if not len(rets):
             return (np.array(x1_batch), np.array(x2_batch)), np.array(y_batch)
 
@@ -86,21 +82,20 @@ class GeoPreprocessor(Preprocessor):
 
         return np.array(encoded_texts)
 
-    """
-    def decode_texts(self, encoded_texts):
-        texts = []
-        for encoded_text in encoded_texts:
-            country = self.regions[int(encoded_text[0] - 3600)] if encoded_text[0] != -1 else "Unknown"
-            latitude = encoded_text[1] / 10
-            longitude = encoded_text[1] / 10
+    # def decode_texts(self, encoded_texts):
+    #     texts = []
+    #     for encoded_text in encoded_texts:
+    #         country = self.regions[int(encoded_text[0] - 3600)] if encoded_text[0] != -1 else "Unknown"
+    #         latitude = encoded_text[1] / 10
+    #         longitude = encoded_text[1] / 10
 
-            texts.append(f"{country}, latitude {latitude}, longitude {longitude}")
+    #         texts.append(f"{country}, latitude {latitude}, longitude {longitude}")
 
-        return np.array(texts)
-    """
+    #     return np.array(texts)
 
     def get_refinement_prompts(self, best_prompt, refinement_amount):
         return self.get_refinement_prompts_coords(best_prompt, refinement_amount)
 
     def find_image(self, inputs):
         return inputs[0]
+"""

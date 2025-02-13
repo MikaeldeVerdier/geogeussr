@@ -5,11 +5,11 @@ class Preprocessor:
     def __init__(self, data_augmentor=None, **kwargs):
         self.data_augmentor = data_augmentor
 
-    def generate_description(self, location_coding):  # could train on different prompt formats to help generalization (as data augmentation)
-        city = location_coding.get("city", None)  # really only needed for this one
-        province = location_coding["province"]
-        country = location_coding["country"]
-        continent = location_coding["continent"]
+    def generate_description(self, location):  # could train on different prompt formats to help generalization (as data augmentation)
+        city = location["coding"].get("city", None)  # really only needed for this one
+        province = location["coding"]["province"]
+        country = location["coding"]["country"]
+        continent = location["coding"]["continent"]
 
         # (prompt, weight)
         available_prompts = [

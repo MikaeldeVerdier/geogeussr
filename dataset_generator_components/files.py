@@ -8,10 +8,10 @@ def save_annotations(annotations, output_dir):
         json.dump(annotations, json_file, ensure_ascii=False)
 
 
-def load_annotations(input_dir, tolerant=False):
+def load_annotations(input_dir, tolerant=True):
     annotations_path = os.path.join(input_dir, "_annotations.json")
 
-    if tolerant and not os.path.exists(annotations_path):
+    if not os.path.exists(annotations_path) and tolerant:
         return []
 
     with open(annotations_path, "r") as json_file:

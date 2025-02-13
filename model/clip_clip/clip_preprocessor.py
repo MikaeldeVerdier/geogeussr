@@ -6,8 +6,8 @@ from transformers import CLIPProcessor
 from model.preprocessor import Preprocessor
 
 class ClipPreprocessor(Preprocessor):
-    def __init__(self, dataset_path, regions, image_size=(336, 336, 3), **kwargs):
-        super().__init__(regions, **kwargs)
+    def __init__(self, dataset_path, image_size=(336, 336, 3), **kwargs):
+        super().__init__(**kwargs)
 
         self.dataset_path = dataset_path
 
@@ -35,7 +35,7 @@ class ClipPreprocessor(Preprocessor):
                 location = self.get_location(annotation["location"])
                 locations.append(location)
 
-            y = self.generate_description(annotation["location"])
+            y = self.generate_description(annotation["location"]["coding"])
             y_batch.append(y)
 
         if passed_images is not None:
@@ -81,7 +81,7 @@ class ClipPreprocessor(Preprocessor):
         return img
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
-        description = self.generate_description(location)
+        description = self.generate_description(location["coding"])
 
         return description
 

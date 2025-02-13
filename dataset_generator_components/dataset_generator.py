@@ -12,7 +12,7 @@ class DatasetGenerator:
         self.generator_method = generator_method
 
         if load_dataset_path is not None:
-            self.annotations = load_annotations(load_dataset_path, tolerant=True)
+            self.annotations = load_annotations(load_dataset_path)
 
         self.streetview_base_url = "https://maps.googleapis.com/maps/api/streetview?"
 

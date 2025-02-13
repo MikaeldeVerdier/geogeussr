@@ -1,6 +1,5 @@
 import os
 import json
-from functools import lru_cache
 
 def save_json(data, path):  # could make this create the path if it doesn't exist
     with open(path, "w") as json_file:
@@ -16,7 +15,6 @@ def save_annotations(annotations, output_dir):
     save_json(annotations, os.path.join(output_dir, "_annotations.json"))
 
 
-@lru_cache()  # loaded for both train_dataset_handler and val_dataset_handler
 def load_annotations(input_dir, tolerant=True):
     anno_path = os.path.join(input_dir, "_annotations.json")
     if not os.path.exists(anno_path) and tolerant:

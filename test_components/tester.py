@@ -5,7 +5,7 @@ from shared_components.inferencer import Inferencer
 
 class Tester:
     def __init__(self, processor_method="Geo"):
-        self.inferencer = Inferencer(test_config.image_size, test_config.tokens_len, test_config.refinement_base, test_config.refinement_steps, "", test_config.regions, test_config.shapefile_path, processor_method=processor_method)
+        self.inferencer = Inferencer(test_config.image_size, test_config.refinement_steps, "", test_config.shapefile_path, processor_method=processor_method)
 
         if not os.path.exists(test_config.inference_save_path):
             os.mkdir(test_config.inference_save_path)

@@ -14,24 +14,23 @@ from model.clip_clip.clip_preprocessor_original import ClipPreprocessorOriginal
 from shared_components.files import load_annotations
 
 class DatasetHandler:
-    def __init__(self, dataset_path, image_size, split, batch_size, regions, data_augmentor_kwargs={}, processor_method="Geo", processor_kwargs={}, shapefile_path=None):
+    def __init__(self, dataset_path, image_size, split, batch_size, data_augmentor_kwargs={}, processor_method="Geo", shapefile_path=None):
         self.dataset_path = dataset_path
         self.image_size = image_size
         self.batch_size = batch_size
-        self.regions = regions
 
         self.data_augmentor = DataAugmentor(image_size, **data_augmentor_kwargs)
 
         if processor_method == "Street":
-            self.preprocessor = StreetPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
+            self.preprocessor = StreetPreprocessor(dataset_path, image_size, data_augmentor=self.data_augmentor)
         elif processor_method == "StreetOG":
-            self.preprocessor = StreetPreprocessorOriginal(dataset_path, regions, **processor_kwargs)
+            self.preprocessor = StreetPreprocessorOriginal(dataset_path, image_size, data_augmentor=self.data_augmentor)
         elif processor_method == "Clip":
-            self.preprocessor = ClipPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
+            self.preprocessor = ClipPreprocessor(dataset_path, image_size, data_augmentor=self.data_augmentor)
         elif processor_method == "ClipOG":
-            self.preprocessor = ClipPreprocessorOriginal(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
+            self.preprocessor = ClipPreprocessorOriginal(dataset_path, image_size, data_augmentor=self.data_augmentor)
         else:
-            self.preprocessor = GeoPreprocessor(dataset_path, regions, data_augmentor=self.data_augmentor, **processor_kwargs)
+            self.preprocessor = GeoPreprocessor(dataset_path, image_size, data_augmentor=self.data_augmentor)
 
         loaded_annotations = load_annotations(dataset_path)
         share = int(len(loaded_annotations) * split)
@@ -50,14 +49,14 @@ class DatasetHandler:
             self.geodf = self.geodf.to_crs("EPSG:3857")
 
     def get_region_annotations(self, region_names):
-        if region_names is not None:
-            region_annotations = [
-                annotation
-                for annotation in self.annotations
-                if annotation["location"]["country"] in region_names
-            ]
-        else:
-            region_annotations = self.annotations
+        if region_names is None:
+            return self.annotations
+
+        region_annotations = [
+            annotation
+            for annotation in self.annotations
+            if annotation["location"]["coding"]["country"] in region_names
+        ]
 
         return region_annotations
 

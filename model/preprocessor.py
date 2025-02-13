@@ -1,31 +1,39 @@
+import random
 import numpy as np
 
 class Preprocessor:
-    def __init__(self, regions, data_augmentor=None, refinement_base=0.1, **kwargs):
-        self.regions = regions
+    def __init__(self, data_augmentor=None, **kwargs):
         self.data_augmentor = data_augmentor
-        self.refinement_base = refinement_base
 
-    def get_region(self, key, value):
-        region_data = [region for region in self.regions if region[key] == value]
-        if not len(region_data):
-            return None
+    def generate_description(self, location_coding):  # could train on different prompt formats to help generalization (as data augmentation)
+        city = location_coding.get("city", None)  # really only needed for this one
+        province = location_coding["province"]
+        country = location_coding["country"]
+        continent = location_coding["continent"]
 
-        return region_data[0]
+        # (prompt, weight)
+        available_prompts = [
+            (f"A Street View photo from {province}, {country}.", 1.25),
+            (f"A Street View photo from {country}.", 0.75),
+            (f"A Street View photo from {country}, in {continent}.", 0.5),
+            (f"A Street View photo from {continent}.", 0.25) 
+        ]
+        if city is not None:
+            extras = [
+                (f"A Street View photo from {city}, {province}, {country}.", 2),
+                (f"A Street View photo from {city}, {country}.", 1.5),
+            ]
+        else:
+            extras = [
+                (f"A Street View photo from rural {province}, {country}.", 2),
+                (f"A Street View photo from rural {country}.", 1.25)
+            ]
 
-    def get_region_index(self, key, value):
-        region_index = [i for i, region in enumerate(self.regions) if region[key] == value][0]
+        available_prompts = np.array(available_prompts + extras)
 
-        return region_index
+        used_prompt = random.choices(available_prompts[:, 0], weights=available_prompts[:, 1].astype(float))[0]
 
-    def generate_description(self, location):  # should be on dataset_handler but it's needed here
-        if "city" in location:
-            return f"A Street View photo from {location['city']}, latitude {location['lat']}, longitude {location['lng']}"
-
-        region_data = self.get_region("code", location["country"])
-        translated_region = region_data["name"]
-
-        return f"A Street View photo in {translated_region}, latitude {float(location['lat']):.3f}, longitude {float(location['lng']):.3f}"
+        return used_prompt
 
     def get_components(self, texts):  # format is so inconsistent throughout this class...
         # regions = []

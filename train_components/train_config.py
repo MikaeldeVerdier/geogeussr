@@ -1,19 +1,11 @@
-from shared_components.files import load_json
-from model.geo_clip.submodels.configs.vit_config import input_shape
-from model.geo_clip.submodels.configs.ttt_config import max_len
-
 # Model config
 name = "GeoCLIP"
-image_size = input_shape
-tokens_len = max_len
+image_size = (336, 336, 3)
+used_regions = None  # ["Sweden"] to only train on Sweden
 
 # Training config
-region_path = "data/country_data.json"
-regions = load_json(region_path)
-used_regions = None  # None -> all
-use_augmentation = True
-
-dataset_path = "data/datasets/dataset_100k"
+dataset_path = "data/datasets/dataset10"
+use_augmentation = False
 iteration_amount = 180_000
 batch_size = 2
 validation_split = 0

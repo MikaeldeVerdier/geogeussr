@@ -12,13 +12,8 @@ class Trainer:
         train_batch_size = round(train_cfg.batch_size * (1 - train_cfg.validation_split))
         val_batch_size = train_cfg.batch_size - train_batch_size
 
-        processor_kwargs = {
-            "iamge_size": train_cfg.image_size,
-            "max_len": train_cfg.max_len
-        }
-
-        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, 1 - train_cfg.validation_split, train_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
-        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, -train_cfg.validation_split, val_batch_size, train_cfg.regions, processor_method=processor_method, processor_kwargs=processor_kwargs)
+        self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, 1 - train_cfg.validation_split, train_batch_size, processor_method=processor_method)
+        self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, -train_cfg.validation_split, val_batch_size, processor_method=processor_method)
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 

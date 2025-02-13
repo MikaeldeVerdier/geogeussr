@@ -3,21 +3,12 @@ from shared_components.dataset_handler import DatasetHandler
 from shared_components.files import save_json
 
 class Inferencer:
-    def __init__(self, image_size, max_len, refinement_base, refinement_steps, dataset_path, regions, shapefile_path, processor_method="Geo"):
+    def __init__(self, image_size, refinement_steps, dataset_path, shapefile_path, processor_method="Geo"):
         self.image_size = image_size
-        self.max_len = max_len
-        self.refinement_base = refinement_base
         self.refinement_steps = refinement_steps
         self.dataset_path = dataset_path
-        self.regions = regions
 
-        processor_kwargs = {
-            "iamge_size": image_size,
-            "max_len": max_len,
-            "refinement_base": refinement_base
-        }
-
-        self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, regions, processor_method=processor_method, processor_kwargs=processor_kwargs, shapefile_path=shapefile_path)
+        self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, processor_method=processor_method, shapefile_path=shapefile_path)
 
     def infer(self, model, used_prompts, inputs=None, image=None, use_com=False):
         process_first = inputs is None and image is not None

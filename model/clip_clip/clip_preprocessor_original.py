@@ -82,7 +82,7 @@ class ClipPreprocessorOriginal(Preprocessor):
         return img
 
     def generate_description(self, location):
-        return f"A Street View photo from {location["coding"]['country']}."
+        return f"A Street View photo from {location['coding']['country']}."
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)

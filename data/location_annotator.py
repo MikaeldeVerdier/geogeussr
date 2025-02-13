@@ -10,9 +10,6 @@ from files import load_annotations, save_annotations
 
 class LocationAnnotator:
     def __init__(self, csv_path=anno_cfg.csv_path, gpkg_path=anno_cfg.gpkg_path):
-        self.csv_path = csv_path
-        self.gpkg_path = gpkg_path
-
         self.mercator_crs = "EPSG:3857"
         self.geodesic_crs = "EPSG:4326"
 

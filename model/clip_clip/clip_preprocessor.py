@@ -10,6 +10,7 @@ class ClipPreprocessor(Preprocessor):
         super().__init__(**kwargs)
 
         self.dataset_path = dataset_path
+        self.image_size = image_size
 
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14-336")
 
@@ -20,7 +21,7 @@ class ClipPreprocessor(Preprocessor):
             "pixel_values": (transposed_image_size, float)
         }
 
-    def __call__(self, chosen_annotations, image_shape, use_augmentation=False, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
+    def __call__(self, chosen_annotations, use_augmentation=False, rets=[], passed_processed_images=None, passed_images=None, passed_prompts=None, **kwargs):  # could obtimize by onnly calculating what needs to be returned
         x_batch = {"input_ids": [], "attention_mask": [], "pixel_values": []}
         y_batch = []
 
@@ -28,7 +29,7 @@ class ClipPreprocessor(Preprocessor):
         locations = [] if passed_prompts is None else passed_prompts
         for annotation in chosen_annotations:
             if passed_processed_images is None and passed_images is None:
-                image = self.get_image(annotation["image_name"], image_shape)
+                image = self.get_image(annotation["image_name"])
                 images.append(image)
 
             if passed_prompts is None:
@@ -71,11 +72,11 @@ class ClipPreprocessor(Preprocessor):
 
         return processed_data
 
-    def get_image(self, image_name, input_shape):
+    def get_image(self, image_name):
         image_path = os.path.join(self.dataset_path, image_name)
 
         img = cv2.imread(image_path)
-        img = cv2.resize(img, input_shape[:-1])
+        img = cv2.resize(img, self.image_size[:-1])
         img = img[..., ::-1]
 
         return img

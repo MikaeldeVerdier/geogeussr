@@ -7,31 +7,45 @@ class Preprocessor:
 
     def generate_description(self, location):  # could train on different prompt formats to help generalization (as data augmentation)
         city = location["coding"].get("city", None)  # really only needed for this one
-        province = location["coding"]["province"]
-        country = location["coding"]["country"]
-        continent = location["coding"]["continent"]
+        province = location["coding"].get("province", None)
+        country = location["coding"].get("country", None)
+        continent = location["coding"].get("continent", None)
+
+        if city == country or city == province:
+            used_city = None  # avoid "Singapore, Singapore"
+        else:
+            used_city = city
+        if province == country:
+            used_province = None
+        else:
+            used_province = province
+
+        # {
+        #     "continent": "Australia",
+        #     "country": "Australia",
+        #     "province": "New South Wales",
+        #     "city": "Echuca"
+        # }
 
         # (prompt, weight)
         available_prompts = [
-            (f"A Street View photo from {province}, {country}.", 1.25),
             (f"A Street View photo from {country}.", 0.75),
             (f"A Street View photo from {country}, in {continent}.", 0.5),
-            (f"A Street View photo from {continent}.", 0.25) 
+            (f"A Street View photo from {continent}.", 0.25)
         ]
-        if city is not None:
-            extras = [
-                (f"A Street View photo from {city}, {province}, {country}.", 2),
-                (f"A Street View photo from {city}, {country}.", 1.5),
-            ]
-        else:
-            extras = [
-                (f"A Street View photo from rural {province}, {country}.", 2),
-                (f"A Street View photo from rural {country}.", 1.25)
-            ]
+        if used_province:
+            available_prompts.append((f"A Street View photo from {used_province}, {country}.", 1.25))
+        if used_city:
+            available_prompts.append((f"A Street View photo from {used_city}, {country}.", 1.5))
+            if used_province:  # readable!
+                available_prompts.append((f"A Street View photo from {used_city}, {used_province}, {country}.", 2))
+        elif city is None:  # make sure there was never any city
+            available_prompts.append((f"A Street View photo from rural {country}.", 1))
+            if used_province:
+                available_prompts.append((f"A Street View photo from rural {used_province}, {country}.", 2))
 
-        available_prompts = np.array(available_prompts + extras)
-
-        used_prompt = random.choices(available_prompts[:, 0], weights=available_prompts[:, 1].astype(float))[0]
+        available_prompts = np.array(available_prompts)
+        used_prompt = random.choices(available_prompts[:, 0], weights=np.array(available_prompts[:, 1], dtype=np.float32))[0]
 
         return used_prompt
 

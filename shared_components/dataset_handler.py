@@ -16,7 +16,6 @@ from shared_components.files import load_annotations
 class DatasetHandler:
     def __init__(self, dataset_path, image_size, split, batch_size, data_augmentor_kwargs={}, processor_method="Geo", shapefile_path=None):
         self.dataset_path = dataset_path
-        self.image_size = image_size
         self.batch_size = batch_size
 
         self.data_augmentor = DataAugmentor(image_size, **data_augmentor_kwargs)
@@ -36,7 +35,6 @@ class DatasetHandler:
         share = int(len(loaded_annotations) * split)
 
         self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
-        self.unique_regions, self.annotation_counts = np.unique([annotation["location"]["country"] for annotation in self.annotations], return_counts=True)
 
         self.load_gadm(shapefile_path)
 
@@ -60,7 +58,7 @@ class DatasetHandler:
 
         return region_annotations
 
-    def create_generator(self, image_shape, region_names, shuffle=True, use_augmentation=False, rets=[], processor_kwargs={}):
+    def create_generator(self, region_names, shuffle=True, use_augmentation=False, rets=[], processor_kwargs={}):
         i = 0
 
         while True:
@@ -72,7 +70,7 @@ class DatasetHandler:
 
             i += 1
 
-            yield self.preprocessor(chosen_annotations, image_shape, use_augmentation=use_augmentation, rets=rets, **processor_kwargs)
+            yield self.preprocessor(chosen_annotations, use_augmentation=use_augmentation, rets=rets, **processor_kwargs)
 
     def create_tensor_spec(self, shape, dtype):
         dtype_map = {
@@ -101,7 +99,7 @@ class DatasetHandler:
         
         # return self.create_generator(image_size, preprocess_function, region_name, y_index)
 
-        generator = lambda: self.create_generator(self.image_size, region_names, shuffle=shuffle, use_augmentation=use_augmentation, rets=rets, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
+        generator = lambda: self.create_generator(region_names, shuffle=shuffle, use_augmentation=use_augmentation, rets=rets, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
         output_signature = self.get_output_signature(self.preprocessor.output_shapes)
         dataset = Dataset.from_generator(
             generator,

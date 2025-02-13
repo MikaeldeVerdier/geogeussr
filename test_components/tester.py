@@ -15,7 +15,9 @@ class Tester:
         image = self.inferencer.dataset_handler.preprocessor.get_image(image_path, test_config.image_size)[None]
 
         best_prompt, sim_matrix = self.inferencer.infer(model, prompts, image=image, use_com=use_com)
-        inference_name = os.path.join(test_config.inference_save_path, f"inference_{os.path.basename(image_path).replace('.png', '')}.json")
+
+        file_name = os.path.basename(image_path).replace(".png", "")
+        inference_name = os.path.join(test_config.inference_save_path, f"inference_{file_name}.json")
         self.inferencer.save_inference(prompts, image[0], best_prompt[0], sim_matrix[0], inference_name)
 
     def test(self, model, use_com=False):

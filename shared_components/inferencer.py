@@ -4,7 +4,6 @@ from shared_components.files import save_json
 
 class Inferencer:
     def __init__(self, image_size, refinement_steps, dataset_path, shapefile_path, processor_method="Geo"):
-        self.image_size = image_size
         self.refinement_steps = refinement_steps
         self.dataset_path = dataset_path
 
@@ -15,7 +14,7 @@ class Inferencer:
 
         for refinement_level in range(self.refinement_steps + 1):
             if process_first:
-                inputs, _ = self.dataset_handler.preprocessor([], self.image_size, passed_images=image, passed_prompts=used_prompts)
+                inputs, _ = self.dataset_handler.preprocessor([], passed_images=image, passed_prompts=used_prompts)
 
             # import numpy as np
             # inputs["input_ids"] = np.array(inputs["input_ids"], dtype=np.int32)
@@ -42,7 +41,7 @@ class Inferencer:
                 break  # could try to continue if next refinement level is possible but would require a restructure
 
             if not process_first:
-                inputs, _ = self.dataset_handler.preprocessor([], self.image_size, passed_processed_images=img, passed_prompts=used_prompts)
+                inputs, _ = self.dataset_handler.preprocessor([], passed_processed_images=img, passed_prompts=used_prompts)
 
         return best_prompt, first_sim_matrix
 

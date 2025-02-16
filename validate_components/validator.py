@@ -20,12 +20,10 @@ class Validator:
 
         return distance
 
-    def evaluate_result(self, pred, gt_location, regions):
-        comp_pred = self.inferencer.dataset_handler.preprocessor.get_components([pred], regions)[0]
-
+    def evaluate_result(self, pred, gt):
         correct_region_level = 0
-        while correct_region_level < len(comp_pred[0]) and correct_region_level < len(gt_location[0]):  # gotta do this instead of list comprehension to ensure break as soon as one is wrong, otherwise could be wrong with countries in multiple continents (e. g. Spain)
-            if comp_pred[0][correct_region_level] != gt_location[0][correct_region_level]:
+        while correct_region_level < len(pred[0]) and correct_region_level < len(gt[0]):  # gotta do this instead of list comprehension to ensure break as soon as one is wrong, otherwise could be wrong with countries in multiple continents (e. g. Spain)
+            if pred[0][correct_region_level] != gt[0][correct_region_level]:
                 break
 
             correct_region_level += 1
@@ -34,7 +32,7 @@ class Validator:
         # correct_region_level 
 
         R = 6371.0  # Earth's radius in km
-        lat1, lng1, lat2, lng2 = map(radians, comp_pred[1] + gt_location[1])
+        lat1, lng1, lat2, lng2 = map(radians, pred[1] + gt[1])
         distance = self.great_circle_distance(lat1, lng1, lat2, lng2, R)  # (km)
 
         return correct_region_level, distance
@@ -47,7 +45,7 @@ class Validator:
         if save_inference_data and not os.path.exists(val_cfg.inference_results_path):
             os.mkdir(val_cfg.inference_results_path)
 
-        prompts = self.inferencer.dataset_handler.preprocessor.get_prompts(regions)
+        prompts, prompt_components = self.inferencer.dataset_handler.preprocessor.get_prompts(regions)
         process_kwargs = {"passed_prompts": prompts}
 
         rets = ["gt_location"]
@@ -64,16 +62,16 @@ class Validator:
                 inputs, gt, ret_values = next(generator)
             used_prompts = prompts
 
-            best_prompt, sim_matrix = self.inferencer.infer(model, used_prompts, inputs=inputs, use_com=use_com)
+            best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, use_com=use_com)
 
             if save_inference_data:
                 image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
                 inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
-                self.inferencer.save_inference(regions, used_prompts, image, best_prompt[0], sim_matrix[0], inference_name, correct_location=ret_values[1][0])
+                self.inferencer.save_inference(prompt_components, image, best_prompt_components[0], sim_matrix[0], inference_name, correct_components=ret_values[1][0])
 
             print(f"Correct answer: {gt}")
 
-            correct_region_level, distance = self.evaluate_result(best_prompt[0], ret_values[1][0], regions)
+            correct_region_level, distance = self.evaluate_result(best_prompt_components[0], ret_values[1][0])
             correct_region_levels_results.append(correct_region_level)
             distance_results.append(distance)
 

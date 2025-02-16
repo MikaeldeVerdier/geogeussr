@@ -121,14 +121,15 @@ class DatasetHandler:
 
         return softmax_distribution
 
-    def decode_predictions_standard(self, logits_per_image, prompts):
+    def decode_predictions_standard(self, logits_per_image, prompts, prompt_components):
         best_match_idx = np.argmax(logits_per_image, axis=-1)
-        best_match_label = np.array(prompts)[..., best_match_idx]
+        best_match_label = np.array(prompts)[best_match_idx]
+        best_match_components = [prompt_components[idx] for idx in best_match_idx]  # hate not being able to vectorize
 
         norm_sims = self.softmax(logits_per_image)
         best_match_confidence = norm_sims[..., best_match_idx]
 
-        return best_match_label, best_match_confidence
+        return best_match_label, best_match_components, best_match_confidence
 
     def region_for_point(self, point):  # POINT IN FORMAT [LONGITUDE, LATITUDE] (could reverse for cosistency)
         if self.geodf is not None:
@@ -151,49 +152,19 @@ class DatasetHandler:
 
         return lowest_area_region_code
 
-    def decode_predictions_com(self, logits_per_image, prompts):  # center-of-mass approach, uses confidences for all prompts instead of just the best one        
-        arr_prompts = np.array(prompts)
+    def decode_predictions_com(self, logits_per_image, prompts, prompt_components):  # center-of-mass approach, uses confidences for all prompts instead of just the best one        
+        arr_prompt_components = np.array(prompt_components)
 
         decoded_texts = []
         for batch_sim in logits_per_image:
-            # norm_batch_sim = (batch_sim + 1) / 2  # normalizes to range [0, 1]. needed? neg sims can't be allowed?
-            if "A Street View photo in " in prompts[0]:
-                best_match_idx = np.argmax(logits_per_image, axis=-1)
-                best_match_prompt = arr_prompts[..., best_match_idx]
-                best_match_code = self.preprocessor.get_components(best_match_prompt)[0][0]
-                best_match_region = self.preprocessor.get_region("code", best_match_code)
+            lats = np.array(arr_prompt_components[:, 1, 0], dtype=np.float32)
+            lngs = np.array(arr_prompt_components[:, 1, 1], dtype=np.float32)  # TODO: This method is flawed. doesn't take looping around the globe into account.
 
-                bordering_region_indices = np.array([i for i, reg in enumerate(self.regions) if reg["code"] in best_match_region["bordering_countries"]], dtype=np.int32)
-                used_indices = np.concatenate([best_match_idx, bordering_region_indices])
-            else:
-                used_indices = np.arange(len(arr_prompts))  # use all prompts in refinement
+            norm_sims = self.softmax(batch_sim)
+            avg_latitude = np.sum(lats * norm_sims, axis=-1)
+            avg_longitude = np.sum(lngs * norm_sims, axis=-1)
+            region = self.region_for_point([avg_longitude, avg_latitude])  # TODO: Need (continent, country, province, (city))...
 
-            used_prompts = arr_prompts[used_indices]
-            used_norm_sims = self.softmax(batch_sim[used_indices])
-
-            # total_weighted_lats = 0
-            # total_weighted_lngs = 0
-            # total_weight = 0  // total_weight is always 1 after softmax
-            components = np.array(self.preprocessor.get_components(used_prompts))
-            lats = np.array(components[:, 1], dtype=np.float32)
-            lngs = np.array(components[:, 2], dtype=np.float32)  # TODO: This method is flawed. doesn't take looping around the globe into account.
-
-            avg_latitude = np.sum(lats * used_norm_sims, axis=-1)
-            avg_longitude = np.sum(lngs * used_norm_sims, axis=-1)
-            region = self.region_for_point([avg_longitude, avg_latitude])
-
-            # for similarity, prompt in zip(norm_batch_sim, prompts):
-            #     components = self.preprocessor.get_components([prompt])[0]
-
-            #     total_weighted_lats += components[1] * similarity
-            #     total_weighted_lngs += components[2] * similarity
-            #     # total_weight += similarity
-
-            # avg_latitude = total_weighted_lats  # / total_weight
-            # avg_longitude = total_weighted_lngs  # / total_weight
-
-            # best_prompt = np.array(prompts)[np.argmax(batch_sim)]
-            # best_prompt_region = self.preprocessor.get_components([best_prompt])[0][0]
             encoded_text = {
                 "country": region,  # Caution: may not always be in the right region. Could check which country the lat/lng lands in instead but could be expensive
                 "lat": avg_latitude,

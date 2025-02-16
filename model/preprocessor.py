@@ -105,11 +105,12 @@ class Preprocessor:
 
         return filtered_available_prompts
 
-    # TODO: implement for other refinement levels
+    """
+    # implement for other refinement levels
     def get_components(self, texts, regions):
         components = []
         for text in texts:
-            text_comps = text.split("A Street View photo from ")[1].split(", ")  # TODO: this doesn't cut it, doesn't work for countries with , in their names
+            text_comps = text.split("A Street View photo from ")[1].split(", ")
             country = text_comps[-1].split(".")[0]
 
             for region in regions.keys():
@@ -123,33 +124,44 @@ class Preprocessor:
             components.append([[continent, country], origin])
 
         return components
+    """
 
     def get_prompts(self, regions, refinement_args=[], refinement_amount=1):
         refinement_args += [None] * (refinement_amount - len(refinement_args) + 1)
         
         prompts = []
+        prompt_components = []
         for continent, countries in regions.items():
             if refinement_args[0] is not None and refinement_args[0] != continent:
                 continue
 
+            continent_origin = countries["origin"][::-1]  # to (lat, lng)
+
             if refinement_amount == 0:
                 prompts += self.get_basic_descriptions(continent=continent)  # continent only used here (should it be used later too?)
+                prompt_components.append([[continent], continent_origin])
                 continue
 
             for country, provinces in list(countries.values())[0].items():
                 if refinement_args[1] is not None and refinement_args[1] != country:
                     continue
-                
+
+                country_origin = provinces["origin"][::-1]
+
                 if refinement_amount == 1:
                     prompts += self.get_basic_descriptions(country=country)
+                    prompt_components.append([[continent, country], country_origin])
                     continue
 
                 for province, cities in list(provinces.values())[0].items():
                     if refinement_args[2] is not None and refinement_args[2] != province:
                         continue
-                    
+
+                    province_origin = cities["origin"][::-1]
+
                     if refinement_amount == 2:
                         prompts += self.get_basic_descriptions(country=country, province=province)
+                        prompt_components.append([[continent, country, province], province_origin])
                         continue
 
                     prompts += self.get_rural_descriptions(country=country, province=province)
@@ -159,6 +171,9 @@ class Preprocessor:
                         if refinement_args[3] is not None and refinement_args[3] != city_name:
                             continue
 
-                        prompts += self.get_basic_descriptions(country=country, province=province, city=city_name)
+                        city_origin = city["origin"][::-1]
 
-        return prompts
+                        prompts += self.get_basic_descriptions(country=country, province=province, city=city_name)
+                        prompt_components.append([[continent, country, province, city_name], city_origin])
+
+        return prompts, prompt_components

@@ -48,7 +48,7 @@ class ValidationVisualizer:
         # if len(incorrect_dists):
         #     plt.bar(bins[:-1], incorrect_hist_density, width=bin_width, label="Incorrect Region", color="red", alpha=0.7)
 
-    def visualize_distribution(self, grouping_size=viz_cfg.grouping_size, plot_density=viz_cfg.plot_density, plot_spaced=viz_cfg.plot_spaced, plot_stacked=viz_cfg.plot_stacked):
+    def visualize_distribution(self, grouping_size=viz_cfg.grouping_size, plot_density=viz_cfg.plot_density):
         dists = np.array(self.validation_information["distances"])
         correct_region_levels = np.array(self.validation_information["correct_region_levels"])
 

@@ -11,6 +11,12 @@ class Preprocessor:
         country = location["coding"].get("country", None)
         continent = location["coding"].get("continent", None)
 
+        if city is not None:
+            return f"A Street View photo from {city}, {province}, {country}, in {continent}."
+        else:
+            return f"A Street View photo from rural {province}, {country}, in {continent}."
+
+        """  # should this be used?
         if city == country or city == province:
             used_city = None  # avoid "Singapore, Singapore"
         else:
@@ -41,6 +47,7 @@ class Preprocessor:
         used_prompt = random.choices(available_prompts[:, 0], weights=np.array(available_prompts[:, 1], dtype=np.float32))[0]
 
         return used_prompt
+        """
 
     def get_basic_descriptions(self, continent=None, country=None, province=None, city=None, use_all=True):
         available_prompts = [
@@ -102,7 +109,7 @@ class Preprocessor:
     def get_components(self, texts, regions):
         components = []
         for text in texts:
-            text_comps = text.split("A Street View photo from ")[1].split(", ")
+            text_comps = text.split("A Street View photo from ")[1].split(", ")  # TODO: this doesn't cut it, doesn't work for countries with , in their names
             country = text_comps[-1].split(".")[0]
 
             for region in regions.keys():

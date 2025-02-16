@@ -36,28 +36,44 @@ class InferenceVisualizer:
         ax.set_title("Image", fontsize=20)
         ax.axis("off")
 
+    def get_prompt_description(self, prompt_components):
+        if len(prompt_components) == 0:
+            return ""
+
+        if len(prompt_components) == 1:
+            return prompt_components[0]
+
+        if len(prompt_components) == 2:
+            return prompt_components[1]
+
+        if len(prompt_components) == 3:
+            return f"{prompt_components[2]}, {prompt_components[1]}"
+
+        if len(prompt_components) == 4:
+            return f"{prompt_components[3]}, {prompt_components[1]}"
+
     def plot_scatter(self, ax, lat_lngs, confs, prompt_components, best_prompt, correct_prompt):
         self.geodf.plot(alpha=0.2, ax=ax)
         # norm_confs = confs / np.exp(np.max(confs))
         norm_confs = confs ** 0.75
         ax.scatter(lat_lngs[:, 1], lat_lngs[:, 0], c="red", alpha=norm_confs)
-        ax.scatter(best_prompt[2], best_prompt[1], c="blue", alpha=1, label=f"Final Guess ({best_prompt[0]})")
+        ax.scatter(best_prompt[1][1], best_prompt[1][0], c="blue", alpha=1, label=f"Final Guess ({self.get_prompt_description(best_prompt[0])})")
         if correct_prompt is not None:
-            ax.scatter(correct_prompt[2], correct_prompt[1], c="green", alpha=1, label=f"Correct Answer ({correct_prompt[0]})")
+            ax.scatter(correct_prompt[1][1], correct_prompt[1][0], c="green", alpha=1, label=f"Correct Answer ({self.get_prompt_description(correct_prompt[0])})")
         ax.scatter([], [], c="red", alpha=0.5, label="Prompts (intensity based on confidence)")  # just for legend
 
         text = ""
         conf_order = np.argsort(confs)[::-1][:5]
         for region, conf in zip(prompt_components[conf_order, 0], confs[conf_order]):
-            text += f"{region}: {conf * 100:.2f}%\n"
+            text += f"{self.get_prompt_description(region)}: {conf * 100:.2f}%\n"
 
         props = dict(boxstyle="round", facecolor="white", alpha=0.5)
-        ax.text(0.05, 0.95, text[:-2], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)
+        ax.text(0.05, 0.95, text[:-1], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)
 
         # ax.scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
         ax.set_title("Results", fontsize=20)
         ax.axis("off")
-        ax.legend(loc="upper right", fontsize=15)
+        ax.legend(loc="upper right", fontsize=15, fancybox=True, framealpha=0.5)  # would like to pass props to here to unify
 
     def visualize_inferences(self):
         for inference_name, inference_information in self.inference_informations.items():
@@ -69,7 +85,7 @@ class InferenceVisualizer:
             best_prompt = inference_information["best_prompt"]
             correct_prompt = inference_information.get("correct_prompt", None)
 
-            lat_lngs = np.array(prompt_components[:, 1:], dtype=np.float32)
+            lat_lngs = np.array(prompt_components[:, 1], dtype=np.float32)
 
             self.plot_image(axs[0], image)
             self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt, correct_prompt)

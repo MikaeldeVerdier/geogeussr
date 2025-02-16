@@ -23,13 +23,21 @@ class Validator:
     def evaluate_result(self, pred, gt_location, regions):
         comp_pred = self.inferencer.dataset_handler.preprocessor.get_components([pred], regions)[0]
 
-        correct_region = all([pred == gt for pred, gt in zip(comp_pred[0], gt_location[0])])  # zips different lengths
+        correct_region_level = 0
+        while correct_region_level < len(comp_pred[0]) and correct_region_level < len(gt_location[0]):  # gotta do this instead of list comprehension to ensure break as soon as one is wrong, otherwise could be wrong with countries in multiple continents (e. g. Spain)
+            if comp_pred[0][correct_region_level] != gt_location[0][correct_region_level]:
+                break
+
+            correct_region_level += 1
+
+        # correct_region = [True for pr, gt in zip(comp_pred[0], gt_location[0]) if pr == gt]  # only check if continent and country are correct
+        # correct_region_level 
 
         R = 6371.0  # Earth's radius in km
         lat1, lng1, lat2, lng2 = map(radians, comp_pred[1] + gt_location[1])
-        distance = self.great_circle_distance(lat1, lng1, lat2, lng2, r=R)  # (km)
+        distance = self.great_circle_distance(lat1, lng1, lat2, lng2, R)  # (km)
 
-        return correct_region, distance
+        return correct_region_level, distance
 
     def validate(self, model, use_com=False):
         regions = load_json(val_cfg.regions_path)
@@ -46,8 +54,8 @@ class Validator:
         if save_inference_data:
             rets.append("raw_images")
         generator = self.inferencer.dataset_handler.create_generator(val_cfg.used_regions, shuffle=val_cfg.shuffle, rets=rets, processor_kwargs=process_kwargs)
-        
-        region_results = []
+
+        correct_region_levels_results = []
         distance_results = []
         for _ in range(val_cfg.iteration_amount):  # could process all the 1st refinement level promp images at once
             if not len(rets):
@@ -65,22 +73,29 @@ class Validator:
 
             print(f"Correct answer: {gt}")
 
-            correct_region, distance = self.evaluate_result(best_prompt[0], ret_values[1][0], regions)
-            region_results.append(correct_region)
+            correct_region_level, distance = self.evaluate_result(best_prompt[0], ret_values[1][0], regions)
+            correct_region_levels_results.append(correct_region_level)
             distance_results.append(distance)
 
-            print(f"Country is {'correct' if correct_region else 'incorrect'}.")
+            correct_level_region_dict = {
+                0: "Nothing",
+                1: "Continent",
+                2: "Continent and country",
+                3: "Continent, country and province",
+                4: "Continent, country, province and city"
+            }
+            print(f"{correct_level_region_dict[correct_region_level]} is correct.")
             print(f"Distance is {distance:.2f}km.")
 
         print("Total results:")
 
-        region_accuracy = sum(map(int, region_results)) / len(region_results)
+        mean_correct_region_level = sum(correct_region_levels_results) / len(correct_region_levels_results)
         mean_distance = sum(distance_results) / len(distance_results)
-        print(f"Country was correct {region_accuracy * 100:}% of the time.")
+        print(f"Average correct region level was {mean_correct_region_level}.")
         print(f"Average distance was {mean_distance:.2f}km.")
 
         validation_results = {
-            "correct_regions": region_results,
+            "correct_region_levels": correct_region_levels_results,
             "distances": distance_results
         }
         save_json(validation_results, val_cfg.vaidation_results_path)

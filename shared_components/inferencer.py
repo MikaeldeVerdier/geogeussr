@@ -45,17 +45,16 @@ class Inferencer:
 
         return best_prompt, first_sim_matrix
 
-    def save_inference(self, prompts, image, best_prompt, sim_matrix, path, correct_prompt=None):
-        prompt_components = self.dataset_handler.preprocessor.get_components(prompts)
-        best_prompt_components = self.dataset_handler.preprocessor.get_components([best_prompt])[0]
+    def save_inference(self, regions, prompts, image, best_prompt, sim_matrix, path, correct_location=None):
+        prompt_components = self.dataset_handler.preprocessor.get_components(prompts, regions)
+        best_prompt_components = self.dataset_handler.preprocessor.get_components([best_prompt], regions)[0]
         inference_results = {
             "prompts": prompt_components,
             "image": image.tolist(),
             "confs": sim_matrix.tolist(),
             "best_prompt": best_prompt_components
         }
-        if correct_prompt is not None:
-            correct_prompt_components = self.dataset_handler.preprocessor.get_components([correct_prompt])[0]
-            inference_results["correct_prompt"] = correct_prompt_components
+        if correct_location is not None:
+            inference_results["correct_prompt"] = correct_location
 
         save_json(inference_results, path)

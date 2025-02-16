@@ -36,7 +36,7 @@ class ClipPreprocessor(Preprocessor):
                 location = self.get_location(annotation["location"])
                 locations.append(location)
 
-            y = self.generate_description(annotation["location"])
+            y = self.get_basic_descriptions(**annotation["location"]["coding"], use_all=False)[0]
             y_batch.append(y)
 
         if passed_images is not None:
@@ -61,6 +61,16 @@ class ClipPreprocessor(Preprocessor):
             ret_data.append(images)
         if "raw_locations" in rets:
             ret_data.append(locations)
+        if "gt_location" in rets:
+            locs = []
+            for annotation in chosen_annotations:
+                loc = annotation["location"]
+                coding = list(loc["coding"].values())
+                lat_lng = [loc["lat"], loc["lng"]]
+
+                locs.append([coding, lat_lng])
+
+            ret_data.append(locs)
 
         return x_batch, np.array(y_batch), ret_data
 

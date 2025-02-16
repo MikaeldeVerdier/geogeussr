@@ -29,7 +29,7 @@ class GeoPreprocessor(Preprocessor):
                 x2 = self.encode_location(annotation["location"])
                 x2_batch.append(x2)
 
-            y = self.generate_description(annotation["location"])
+            y = self.get_basic_descriptions(**annotation["location"]["coding"], use_all=False)[0]
             y_batch.append(y)
 
         if passed_prompts is not None:

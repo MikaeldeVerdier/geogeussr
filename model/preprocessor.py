@@ -20,13 +20,6 @@ class Preprocessor:
         else:
             used_province = province
 
-        # {
-        #     "continent": "Australia",
-        #     "country": "Australia",
-        #     "province": "New South Wales",
-        #     "city": "Echuca"
-        # }
-
         # (prompt, weight)
         available_prompts = [
             (f"A Street View photo from {country}.", 0.75),
@@ -49,95 +42,116 @@ class Preprocessor:
 
         return used_prompt
 
-    def get_components(self, texts):  # format is so inconsistent throughout this class...
-        # regions = []
+    def get_basic_descriptions(self, continent=None, country=None, province=None, city=None, use_all=True):
+        available_prompts = [
+            ("A Street View photo from {city}, {province}, {country}.", ["city", "province", "country"]),
+            ("A Street View photo from {city}, {country}.", ["city", "country"]),
+            ("A Street View photo from {city}, {province}.", ["city", "province"]),
+            ("A Street View photo from {city}.", ["city"]),  # for Singapore and such
+            ("A Street View photo from {province}, {country}.", ["province", "country"]),
+            ("A Street View photo from {country}, in {continent}.", ["country", "continent"]),
+            ("A Street View photo from {country}.", ["country"]),
+            ("A Street View photo from {continent}.", ["continent"]),
+            # ("A Street View photo from {city}, {province}, {country}, in {continent}.", ["city", "province", "country", "continent"]),
+        ]
+
+        format_dict = {}
+        if city:
+            format_dict["city"] = city
+        if province and province not in format_dict.values():
+            format_dict["province"] = province
+        if country and country not in format_dict.values():
+            format_dict["country"] = country
+        if continent and continent not in format_dict.values():
+            format_dict["continent"] = continent
+
+        filtered_available_prompts = []
+        for prompt, required_keys in available_prompts:
+            format_has_all = all([required_key in format_dict.keys() for required_key in required_keys])
+            has_all_format = all([key in required_keys for key in format_dict.keys()])
+            if format_has_all and (has_all_format or not use_all):
+                filtered_available_prompts.append(prompt.format(**format_dict))
+
+        return filtered_available_prompts
+
+    def get_rural_descriptions(self, continent=None, country=None, province=None, use_all=True):
+        available_prompts = [
+            ("A Street View photo from rural {country}.", ["country"]),
+            ("A Street View photo from rural {province}, {country}.", ["province", "country"]),
+            ("A Street View photo from rural {continent}.", ["continent"])
+        ]
+
+        format_dict = {}
+        if province and province not in format_dict.values():
+            format_dict["province"] = province
+        if country and country not in format_dict.values():
+            format_dict["country"] = country
+        if continent and continent not in format_dict.values():
+            format_dict["continent"] = continent
+
+        filtered_available_prompts = []
+        for prompt, required_keys in available_prompts:
+            format_has_all = all([required_key in format_dict.keys() for required_key in required_keys])
+            has_all_format = all([key in required_keys for key in format_dict.keys()])
+            if format_has_all and (has_all_format or not use_all):
+                filtered_available_prompts.append(prompt.format(**format_dict))
+
+        return filtered_available_prompts
+
+    # TODO: implement for other refinement levels
+    def get_components(self, texts, regions):
         components = []
         for text in texts:
-            text_comps = text.split(", latitude ")
-            if "A Street View photo in " in text_comps[0]:
-                region = text_comps[0].split("A Street View photo in ")[1]
-                region_data = self.get_region("name", region)
-                untranslated_region = region_data["code"]
-            else:
-                city = text_comps[0].split("A Street View photo from ")[1]
-                untranslated_region = [region for region in self.regions if city in [city["name"] for city in region["cities"]]][0]["code"]
+            text_comps = text.split("A Street View photo from ")[1].split(", ")
+            country = text_comps[-1].split(".")[0]
 
-            str_latitude, str_longitude = text_comps[1].split(", longitude ")
-            latitude = float(str_latitude)
-            longitude = float(str_longitude)
+            for region in regions.keys():
+                if country in regions[region]["countries"]:
+                    continent = region
+                    origin = regions[region]["countries"][country]["origin"][::-1]  # to (lat, lng)
+
+                    break
 
             # regions.append(region)
-            components.append([untranslated_region, latitude, longitude])
+            components.append([[continent, country], origin])
 
         return components
 
-    def get_prompts(self):
-        locations = [
-            {
-                "country": region["code"],
-                "lat": region["origin"][1],
-                "lng": region["origin"][0]
-            }
-            for region in self.regions
-        ]
+    def get_prompts(self, regions, refinement_args=[], refinement_amount=1):
+        refinement_args += [None] * (refinement_amount - len(refinement_args) + 1)
+        
         prompts = []
-        for location in locations:
-            prompts.append(self.generate_description(location))
+        for continent, countries in regions.items():
+            if refinement_args[0] is not None and refinement_args[0] != continent:
+                continue
 
-        return prompts
+            if refinement_amount == 0:
+                prompts += self.get_basic_descriptions(continent=continent)  # continent only used here (should it be used later too?)
+                continue
 
-    def get_refinement_prompts_coords(self, best_prompt, refinement_amount):
-        best_region_code, best_lat, best_lng = self.get_components([best_prompt])[0]
-        best_region = self.get_region("code", best_region_code)
-        best_region_box = best_region["bounding_box"]
+            for country, provinces in list(countries.values())[0].items():
+                if refinement_args[1] is not None and refinement_args[1] != country:
+                    continue
+                
+                if refinement_amount == 1:
+                    prompts += self.get_basic_descriptions(country=country)
+                    continue
 
-        width = best_region_box[2] - best_region_box[0]
-        height = best_region_box[3] - best_region_box[1]
+                for province, cities in list(provinces.values())[0].items():
+                    if refinement_args[2] is not None and refinement_args[2] != province:
+                        continue
+                    
+                    if refinement_amount == 2:
+                        prompts += self.get_basic_descriptions(country=country, province=province)
+                        continue
 
-        refinement_factor = self.refinement_base ** refinement_amount
-        used_width = width * refinement_factor
-        used_height = height * refinement_factor
+                    prompts += self.get_rural_descriptions(country=country, province=province)
+                    for city in list(cities.values())[0]:
+                        city_name = city["name"]
 
-        lowest_lat = max(best_region_box[1], best_lat - used_height / 2)  # to avoid maxing and minning could change the country if outside of box (but would then have to load gadm)
-        highest_lat = min(best_region_box[3], best_lat + used_height / 2)
-        lowest_lng = max(best_region_box[0], best_lng - used_width / 2)
-        highest_lng = min(best_region_box[2], best_lng + used_width / 2)
+                        if refinement_args[3] is not None and refinement_args[3] != city_name:
+                            continue
 
-        lats = np.linspace(lowest_lat, highest_lat, int(height) + 1)  # more fine guesses if the coutnry is bigger
-        lngs = np.linspace(lowest_lng, highest_lng, int(width) + 1)
-
-        locations = [
-            {
-                "country": best_region_code,
-                "lat": lat,
-                "lng": lng
-            }
-            for lng in lngs for lat in lats
-        ]
-        prompts = []
-        for location in locations:
-            prompts.append(self.generate_description(location))
-
-        return prompts
-
-    def get_refinement_prompts_city(self, best_prompt, refinement_amount):
-        if refinement_amount > 0:
-            return []  # can't refine more than once
-
-        best_region_code, best_lat, best_lng = self.get_components([best_prompt])[0]
-        best_region = self.get_region("code", best_region_code)
-        best_region_cities = best_region["cities"]
-
-        locations = [
-            {
-                "city": city["name"],
-                "lat": city["origin"][1],
-                "lng": city["origin"][0]
-            }
-            for city in best_region_cities
-        ]
-        prompts = []
-        for location in locations:
-            prompts.append(self.generate_description(location))
+                        prompts += self.get_basic_descriptions(country=country, province=province, city=city_name)
 
         return prompts

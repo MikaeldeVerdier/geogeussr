@@ -1,19 +1,12 @@
-from shared_components.files import load_json
-from model.geo_clip.submodels.configs.vit_config import input_shape
-from model.geo_clip.submodels.configs.ttt_config import max_len
-
 # Model config
-image_size = input_shape
-tokens_len = max_len
+image_size = (336, 336, 3)
 
 # Testing config
-region_path = "data/country_data.json"
-regions = load_json(region_path)
+regions_path = "data/geo_data.json"
 used_regions = None
 shapefile_path = "data/dissolved_gadm.gpkg"  # None
+refinement_steps = 0
 
-refinement_base = 0.5
-refinement_steps = 1
 dataset_path = "data/datasets/dataset10"
 shuffle = False
 iteration_amount = 10

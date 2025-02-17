@@ -56,11 +56,21 @@ class StreetPreprocessor(Preprocessor):
         if not len(rets):
             return x_batch, np.array(y_batch)  # y_true not used, but is just GT description
 
-        ret_data = []
+        ret_data = {}
         if "raw_images" in rets:
-            ret_data.append(images)
+            ret_data["raw_images"] = images
         if "raw_locations" in rets:
-            ret_data.append(locations)
+            ret_data["raw_locations"] = locations
+        if "gt_components" in rets:
+            locs = []
+            for annotation in chosen_annotations:
+                loc = annotation["location"]
+                coding = list(loc["coding"].values())
+                lat_lng = [loc["lat"], loc["lng"]]
+
+                locs.append([coding, lat_lng])
+
+            ret_data["gt_components"] = locs
 
         return x_batch, np.array(y_batch), ret_data
 

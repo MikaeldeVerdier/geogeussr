@@ -107,6 +107,7 @@ class InferenceVisualizer:
 
                 self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt, correct_prompt, refinement_idx=frame)
 
+            # consider saving an image if only one refinement level or maybe even allowing individual frame saving
             ani = FuncAnimation(fig, update_frame, frames=len(refinement_results), interval=1500)
             plt.suptitle("Inference Results for Image", fontsize=40)
             plt.tight_layout()

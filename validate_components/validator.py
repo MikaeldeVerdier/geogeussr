@@ -48,7 +48,7 @@ class Validator:
         prompts, prompt_components = self.inferencer.dataset_handler.preprocessor.get_prompts(regions)
         process_kwargs = {"passed_prompts": prompts}
 
-        rets = ["gt_location"]
+        rets = ["gt_components"]
         if save_inference_data:
             rets.append("raw_images")
         generator = self.inferencer.dataset_handler.create_generator(val_cfg.used_regions, shuffle=val_cfg.shuffle, rets=rets, processor_kwargs=process_kwargs)
@@ -65,13 +65,13 @@ class Validator:
             refinement_results = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, regions=regions, use_com=use_com)
 
             if save_inference_data:
-                image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
+                image = ret_values["raw_images"][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
                 inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
-                self.inferencer.save_inference(inference_name, image, refinement_results, correct_components=ret_values[1][0])
+                self.inferencer.save_inference(inference_name, image, refinement_results, correct_components=ret_values["gt_components"][0])
 
             print(f"Correct answer: {gt}")
 
-            correct_region_level, distance = self.evaluate_result(refinement_results[-1]["used_prompt_components"], ret_values[1][0])
+            correct_region_level, distance = self.evaluate_result(refinement_results[-1]["used_prompt_components"], ret_values["gt_components"][0])
             correct_region_levels_results.append(correct_region_level)
             distance_results.append(distance)
 

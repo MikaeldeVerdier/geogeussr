@@ -3,10 +3,10 @@ import json
 import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 import inference_viz_config as viz_cfg
 
-# TODO: Improve this one to show refinements too (maybe with an animation? Would be really cool)
 class InferenceVisualizer:
     def __init__(self, save_path=viz_cfg.save_path, inference_dir=viz_cfg.inference_dir, shapefile_path=viz_cfg.shapefile_path):
         self.save_path = save_path
@@ -50,9 +50,12 @@ class InferenceVisualizer:
             return f"{prompt_components[2]}, {prompt_components[1]}"
 
         if len(prompt_components) == 4:
-            return f"{prompt_components[3]}, {prompt_components[1]}"
+            if prompt_components[3]:
+                return f"{prompt_components[3]}, {prompt_components[1]}"
+            else:
+                return f"Rural {prompt_components[2]}, {prompt_components[1]}"
 
-    def plot_scatter(self, ax, lat_lngs, confs, prompt_components, best_prompt, correct_prompt):
+    def plot_scatter(self, ax, lat_lngs, confs, prompt_components, best_prompt, correct_prompt, refinement_idx=None):
         self.geodf.plot(alpha=0.2, ax=ax)
         # norm_confs = confs / np.exp(np.max(confs))
         norm_confs = confs ** 0.75
@@ -72,7 +75,10 @@ class InferenceVisualizer:
         ax.text(0.015, 1.2, text[:-1], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)  # estimated to imitate legend
 
         # ax.scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
-        ax.set_title("Results", fontsize=20)
+        if refinement_idx is not None:
+            ax.set_title(f"Results\n(refinement level: {refinement_idx + 1})", fontsize=20)
+        else:
+            ax.set_title("Results", fontsize=20)
         # ax.axis("off")
         ax.set_xticks([])
         ax.set_yticks([])
@@ -80,26 +86,33 @@ class InferenceVisualizer:
 
     def visualize_inferences(self):
         for inference_name, inference_information in self.inference_informations.items():
+            image = np.array(inference_information["image"])
+            correct_prompt = inference_information.get("correct_prompt", None)
+            refinement_results = inference_information["refinement_results"]
+            # for refinement_idx, refinement_result in enumerate(refinement_results):
+
             fig, axs = plt.subplots(1, 2, figsize=(21, 11), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
 
-            prompt_components = inference_information["prompts"]
-            image = np.array(inference_information["image"])
-            confs = np.array(inference_information["confs"])
-            best_prompt = inference_information["best_prompt"]
-            correct_prompt = inference_information.get("correct_prompt", None)
-
-            lat_lngs = np.array([components[1] for components in prompt_components])
-
             self.plot_image(axs[0], image)
-            self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt, correct_prompt)
 
+            # TODO: Consider zooming the image to see the prompts better for deeper refinements
+            def update_frame(frame):
+                axs[1].clear()
+
+                prompt_components = refinement_results[frame]["prompt_components"]
+                best_prompt = refinement_results[frame]["used_prompt_components"]
+                confs = np.array(refinement_results[frame]["confidences"])
+
+                lat_lngs = np.array([components[1] for components in prompt_components])
+
+                self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt, correct_prompt, refinement_idx=frame)
+
+            ani = FuncAnimation(fig, update_frame, frames=len(refinement_results), interval=1500)
             plt.suptitle("Inference Results for Image", fontsize=40)
             plt.tight_layout()
 
-            inference_path = os.path.join(self.save_path, f"{inference_name}.png")
-            plt.savefig(inference_path)
-
-            plt.close()
+            inference_path = os.path.join(self.save_path, f"{inference_name}.mp4")
+            ani.save(inference_path, writer="ffmpeg")
 
 
 if __name__ == "__main__":

@@ -128,6 +128,8 @@ class DatasetHandler:
         if self.data_handler is None:  # could be invoked at an earlier point but this works nicely
             self.data_handler = DataHandler(self.city_path, self.gadm_path)
 
+        refinement_level = len(prompt_components[0])  # could be passed as an argument
+
         lat_lngs = np.array([components[1] for components in prompt_components])
 
         decoded_texts = []
@@ -137,7 +139,7 @@ class DatasetHandler:
             avg_point = self.data_handler.spherically_averaged_centroid(lat_lngs, weights=norm_sims)
 
             coding = self.data_handler.annotate_point(avg_point.y, avg_point.x, force_point=True)
-            components = [list(coding.values()), [avg_point.y, avg_point.x]]
+            components = [list(coding.values())[:refinement_level], [avg_point.y, avg_point.x]]
             decoded_components.append(components)  # depending on order like this is bad, perhaps all codings should be dicts
 
             descriptions = self.preprocessor.get_basic_descriptions(**coding, use_all=False)

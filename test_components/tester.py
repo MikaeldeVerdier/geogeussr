@@ -16,11 +16,11 @@ class Tester:
         prompts, prompt_components = self.inferencer.dataset_handler.preprocessor.get_prompts(regions)
         image = self.inferencer.dataset_handler.preprocessor.get_image(image_path)[None]
 
-        best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, prompts, prompt_components, image=image, regions=regions, use_com=use_com)
+        refinement_results = self.inferencer.infer(model, prompts, prompt_components, image=image, regions=regions, use_com=use_com)
 
         file_name = os.path.basename(image_path).replace(".png", "")
         inference_name = os.path.join(test_cfg.inference_save_path, f"inference_{file_name}.json")
-        self.inferencer.save_inference(prompt_components, image[0], best_prompt_components[0], sim_matrix[0], inference_name)
+        self.inferencer.save_inference(inference_name, image[0], refinement_results)
 
     def test(self, model, use_com=False):
         if test_cfg.data_file is not None and os.path.exists(test_cfg.data_file):

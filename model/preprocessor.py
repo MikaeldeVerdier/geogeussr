@@ -124,6 +124,9 @@ class Preprocessor:
     """
 
     def get_prompts(self, regions, refinement_args=[], refinement_amount=1):
+        if refinement_amount > 3:
+            return [], []
+
         refinement_args += [None] * (refinement_amount - len(refinement_args) + 1)
 
         prompts = []
@@ -166,7 +169,7 @@ class Preprocessor:
 
                     prompt = [p for p in self.get_rural_descriptions(country=country, province=province) if p not in prompts]
                     prompts += prompt
-                    prompt_components += [[[continent, country, province], province_origin]] * len(prompt)
+                    prompt_components += [[[continent, country, province, None], province_origin]] * len(prompt)
                     for city in cities["cities"]:
                         city_name = city["name"]
 

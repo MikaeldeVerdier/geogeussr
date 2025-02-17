@@ -62,16 +62,16 @@ class Validator:
                 inputs, gt, ret_values = next(generator)
             used_prompts = prompts
 
-            best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, regions=regions, use_com=use_com)
+            refinement_results = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, regions=regions, use_com=use_com)
 
             if save_inference_data:
                 image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it
                 inference_name = os.path.join(val_cfg.inference_results_path, f"inference_{gt[0]}.json")
-                self.inferencer.save_inference(prompt_components, image, best_prompt_components[0], sim_matrix[0], inference_name, correct_components=ret_values[1][0])
+                self.inferencer.save_inference(inference_name, image, refinement_results, correct_components=ret_values[1][0])
 
             print(f"Correct answer: {gt}")
 
-            correct_region_level, distance = self.evaluate_result(best_prompt_components[0], ret_values[1][0])
+            correct_region_level, distance = self.evaluate_result(refinement_results[-1]["used_prompt_components"], ret_values[1][0])
             correct_region_levels_results.append(correct_region_level)
             distance_results.append(distance)
 

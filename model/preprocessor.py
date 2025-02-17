@@ -1,6 +1,3 @@
-import random
-import numpy as np
-
 class Preprocessor:
     def __init__(self, data_augmentor=None, **kwargs):
         self.data_augmentor = data_augmentor
@@ -128,7 +125,7 @@ class Preprocessor:
 
     def get_prompts(self, regions, refinement_args=[], refinement_amount=1):
         refinement_args += [None] * (refinement_amount - len(refinement_args) + 1)
-        
+
         prompts = []
         prompt_components = []
         for continent, countries in regions.items():  # could do recursively instead

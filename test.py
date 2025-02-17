@@ -30,6 +30,7 @@ if __name__ == "__main__":
     tester = Tester(processor_method="Clip")
 
     tester.test(clip_clip)
+    # tester.test(clip_clip, use_com=True)
 
 
     # # Test a ClipCLIP model with original prompt format

@@ -62,7 +62,7 @@ class Validator:
                 inputs, gt, ret_values = next(generator)
             used_prompts = prompts
 
-            best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, use_com=use_com)
+            best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, used_prompts, prompt_components, inputs=inputs, regions=regions, use_com=use_com)
 
             if save_inference_data:
                 image = ret_values[0][0]  # saves unnormalized sometimes and sometimes normalized (depends on preprocessor). works though because inference_visualizer handles it

@@ -16,7 +16,7 @@ class Tester:
         prompts, prompt_components = self.inferencer.dataset_handler.preprocessor.get_prompts(regions)
         image = self.inferencer.dataset_handler.preprocessor.get_image(image_path)[None]
 
-        best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, prompts, prompt_components, image=image, use_com=use_com)
+        best_prompt, best_prompt_components, sim_matrix = self.inferencer.infer(model, prompts, prompt_components, image=image, regions=regions, use_com=use_com)
 
         file_name = os.path.basename(image_path).replace(".png", "")
         inference_name = os.path.join(test_cfg.inference_save_path, f"inference_{file_name}.json")

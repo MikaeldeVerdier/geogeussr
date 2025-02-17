@@ -6,7 +6,7 @@ regions_path = "data/geo_data.json"
 used_regions = None
 gadm_path = "data/gadm_410.gpkg"  # None
 city_path = "data/worldcities.csv"  # None
-refinement_steps = 0
+refinement_steps = 1
 
 dataset_path = "data/datasets/dataset10"
 shuffle = False

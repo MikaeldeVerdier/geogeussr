@@ -9,7 +9,7 @@ class Inferencer:
 
         self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, gadm_path=gadm_path, city_path=city_path, processor_method=processor_method)
 
-    def infer(self, model, used_prompts, used_prompt_components, inputs=None, image=None, use_com=False):
+    def infer(self, model, used_prompts, used_prompt_components, inputs=None, image=None, regions=None, use_com=False):
         process_first = inputs is None and image is not None
 
         for refinement_level in range(self.refinement_steps + 1):
@@ -35,13 +35,13 @@ class Inferencer:
             if refinement_level == self.refinement_steps:
                 continue  # don't need to do the last ones
 
-            img = self.dataset_handler.preprocessor.find_image(inputs)
-            used_prompts = self.dataset_handler.preprocessor.get_refinement_prompts(best_prompt[0], refinement_amount=refinement_level)
+            # this loses batch generality, but it needs to, there is not other way to do it. just weird to have this hybrid generality
+            used_prompts, used_prompt_components = self.dataset_handler.preprocessor.get_prompts(regions, best_prompt_components[0][0], refinement_amount=refinement_level + 2)
             if not len(used_prompts):
                 break  # could try to continue if next refinement level is possible but would require a restructure
 
-            if not process_first:
-                inputs, _ = self.dataset_handler.preprocessor([], passed_processed_images=img, passed_prompts=used_prompts)
+            img = self.dataset_handler.preprocessor.find_image(inputs)
+            inputs, _ = self.dataset_handler.preprocessor([], passed_processed_images=img, passed_prompts=used_prompts)
 
         return best_prompt, best_prompt_components, first_sim_matrix
 

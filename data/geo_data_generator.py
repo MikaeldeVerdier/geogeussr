@@ -45,6 +45,7 @@ class GeoDataGenerator:
             province_origin = (province_centroids[province].x, province_centroids[province].y) if province in province_centroids.index else None
             city_origin = (row.geometry.centroid.x, row.geometry.centroid.y)  # hasattr(row, "geometry") ?
 
+            """  Opted out of this because key order become inconsistent and unpreferred
             result.setdefault(continent, {
                 "origin": continent_origin
             }).setdefault("countries", {}).setdefault(country, {
@@ -55,9 +56,14 @@ class GeoDataGenerator:
                 "name": city,
                 "origin": city_origin
             })
-            # result[continent]["origin"] = continent_origin
-            # result[continent]["countries"][country]["origin"] = country_origin
-            # result[continent]["countries"][country]["provinces"][province]["origin"] = province_origin
+            """
+            result.setdefault(continent, {}).setdefault("countries", {}).setdefault(country, {}).setdefault("provinces", {}).setdefault(province, {}).setdefault("cities", []).append({
+                "name": city,
+                "origin": city_origin
+            })
+            result[continent]["origin"] = continent_origin
+            result[continent]["countries"][country]["origin"] = country_origin
+            result[continent]["countries"][country]["provinces"][province]["origin"] = province_origin
             # result[continent]["countries"][country]["provinces"][province]["cities"][city]["origin"] = city_origin
 
         save_json(result, save_path)

@@ -8,11 +8,15 @@ class Preprocessor:
         country = location["coding"].get("country", None) or None
         continent = location["coding"].get("continent", None) or None  # "or None" to handle empty strings
 
+        return f"A Street View photo from {country}."
+
+        """
         if city is not None:  # gotta handle other cases somehow
             return f"A Street View photo from {city}, {province}, {country}, in {continent}."
         else:
             return f"A Street View photo from rural {province}, {country}, in {continent}."
-
+        """
+ 
         """  # should this be used?
         if city == country or city == province:
             used_city = None  # avoid "Singapore, Singapore"

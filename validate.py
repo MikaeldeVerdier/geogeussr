@@ -30,6 +30,7 @@ if __name__ == "__main__":
     validator = Validator(processor_method="Clip")
 
     validator.validate(clip_clip)
+    # validator.validate(clip_clip, use_com=True)
 
 
     # # Validate a ClipCLIP model with original prompt format

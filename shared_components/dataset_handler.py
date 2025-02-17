@@ -1,10 +1,9 @@
 import numpy as np
 import random
 import tensorflow as tf
-import geopandas as gpd
 from tensorflow.data import Dataset
-from shapely import Point
 
+from data.data_handler import DataHandler
 from train_components.data_augmentor import DataAugmentor
 # from model.geo_clip.geo_preprocessor import GeoPreprocessor
 from model.street_clip.street_preprocessor import StreetPreprocessor
@@ -14,9 +13,11 @@ from model.clip_clip.clip_preprocessor_original import ClipPreprocessorOriginal
 from shared_components.files import load_annotations
 
 class DatasetHandler:
-    def __init__(self, dataset_path, image_size, split, batch_size, data_augmentor_kwargs={}, processor_method="Geo", shapefile_path=None):
+    def __init__(self, dataset_path, image_size, split, batch_size, data_augmentor_kwargs={}, processor_method="Geo", gadm_path=None, city_path=None):
         self.dataset_path = dataset_path
         self.batch_size = batch_size
+        self.gadm_path = gadm_path
+        self.city_path = city_path
 
         self.data_augmentor = DataAugmentor(image_size, **data_augmentor_kwargs)
 
@@ -36,15 +37,7 @@ class DatasetHandler:
 
         self.annotations = loaded_annotations[:share] if split >= 0 else loaded_annotations[share:]
 
-        self.load_gadm(shapefile_path)
-
-    def load_gadm(self, shapefile_path):
-        if shapefile_path is None:
-            return
-
-        self.geodf = gpd.read_file(shapefile_path)  # Weird for this to use gadm directly when everything else has to rely on the information in regions variable
-        if self.geodf.crs != "EPSG:3857":
-            self.geodf = self.geodf.to_crs("EPSG:3857")
+        self.data_handler = None
 
     def get_region_annotations(self, region_names):
         if region_names is None:
@@ -131,46 +124,23 @@ class DatasetHandler:
 
         return best_match_label, best_match_components, best_match_confidence
 
-    def region_for_point(self, point):  # POINT IN FORMAT [LONGITUDE, LATITUDE] (could reverse for cosistency)
-        if self.geodf is not None:
-            shp_point_ll = gpd.GeoDataFrame(geometry=[Point(point[0], point[1])], crs="EPSG:4326")
-            shp_point = shp_point_ll.to_crs("EPSG:3857").geometry.loc[0]  # don't like using loc
-            distances = self.geodf.geometry.distance(shp_point)
-            country_name = self.geodf.loc[distances.idxmin()]["GID_0"]  # don't like using loc
-
-            return country_name
-
-        # the following won't always be correct. be weary of using it (not speicying shapefile_path)
-        bounding_boxes = np.array([region["bounding_box"] for region in self.regions])
-        inside_x = (point[0] >= bounding_boxes[:, 0]) & (point[0] <= bounding_boxes[:, 2])
-        inside_y = (point[1] >= bounding_boxes[:, 1]) & (point[1] <= bounding_boxes[:, 3])  # could combine these statements for minor performance imrpovement
-
-        fitting_region_indices = np.where(inside_x & inside_y)[0]  # can be true for multiple regions, choose the one with the lowest area.
-        fitting_regions = np.array(self.regions)[fitting_region_indices]
-        fitting_region_areas = (bounding_boxes[fitting_region_indices][:, 2] - bounding_boxes[fitting_region_indices][:, 0]) * (bounding_boxes[fitting_region_indices][:, 3] - bounding_boxes[fitting_region_indices][:, 1])
-        lowest_area_region_code = fitting_regions[np.argmin(fitting_region_areas)]  # Could do a ratio between the area and the distance to the center of the region instead
-
-        return lowest_area_region_code
-
     def decode_predictions_com(self, logits_per_image, prompts, prompt_components):  # center-of-mass approach, uses confidences for all prompts instead of just the best one        
-        arr_prompt_components = np.array(prompt_components)
+        if self.data_handler is None:  # could be invoked at an earlier point but this works nicely
+            self.data_handler = DataHandler(self.city_path, self.gadm_path)
+
+        lat_lngs = np.array([components[1] for components in prompt_components])
 
         decoded_texts = []
+        decoded_components = []
         for batch_sim in logits_per_image:
-            lats = np.array(arr_prompt_components[:, 1, 0], dtype=np.float32)
-            lngs = np.array(arr_prompt_components[:, 1, 1], dtype=np.float32)  # TODO: This method is flawed. doesn't take looping around the globe into account.
-
             norm_sims = self.softmax(batch_sim)
-            avg_latitude = np.sum(lats * norm_sims, axis=-1)
-            avg_longitude = np.sum(lngs * norm_sims, axis=-1)
-            region = self.region_for_point([avg_longitude, avg_latitude])  # TODO: Need (continent, country, province, (city))...
+            avg_point = self.data_handler.spherically_averaged_centroid(lat_lngs, weights=norm_sims)
 
-            encoded_text = {
-                "country": region,  # Caution: may not always be in the right region. Could check which country the lat/lng lands in instead but could be expensive
-                "lat": avg_latitude,
-                "lng": avg_longitude
-            }
+            coding = self.data_handler.annotate_point(avg_point.y, avg_point.x, force_point=True)
+            components = [list(coding.values()), [avg_point.y, avg_point.x]]
+            decoded_components.append(components)  # depending on order like this is bad, perhaps all codings should be dicts
 
-            decoded_texts.append(self.preprocessor.generate_description(encoded_text))
+            descriptions = self.preprocessor.get_basic_descriptions(**coding, use_all=False)
+            decoded_texts.append(descriptions[0])
 
-        return decoded_texts
+        return decoded_texts, decoded_components

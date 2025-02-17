@@ -3,11 +3,11 @@ from shared_components.dataset_handler import DatasetHandler
 from shared_components.files import save_json
 
 class Inferencer:
-    def __init__(self, image_size, refinement_steps, dataset_path, shapefile_path, processor_method="Geo"):
+    def __init__(self, image_size, refinement_steps, dataset_path, gadm_path=None, city_path=None, processor_method="Geo"):
         self.refinement_steps = refinement_steps
         self.dataset_path = dataset_path
 
-        self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, processor_method=processor_method, shapefile_path=shapefile_path)
+        self.dataset_handler = DatasetHandler(dataset_path, image_size, 1, 1, gadm_path=gadm_path, city_path=city_path, processor_method=processor_method)
 
     def infer(self, model, used_prompts, used_prompt_components, inputs=None, image=None, use_com=False):
         process_first = inputs is None and image is not None

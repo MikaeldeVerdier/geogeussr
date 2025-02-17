@@ -7,13 +7,13 @@ from shared_components.files import load_json, save_json
 
 class Validator:
     def __init__(self, processor_method="Geo"):
-        self.inferencer = Inferencer(val_cfg.image_size, val_cfg.refinement_steps, val_cfg.dataset_path, val_cfg.shapefile_path, processor_method=processor_method)
+        self.inferencer = Inferencer(val_cfg.image_size, val_cfg.refinement_steps, val_cfg.dataset_path, gadm_path=val_cfg.gadm_path, city_path=val_cfg.city_path, processor_method=processor_method)
 
     def great_circle_distance(self, lat1, lng1, lat2, lng2, r):
         dlat = lat2 - lat1
-        dlon = lng2 - lng1
+        dlng = lng2 - lng1
 
-        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+        a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlng / 2) ** 2
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
         distance = r * c
@@ -31,9 +31,9 @@ class Validator:
         # correct_region = [True for pr, gt in zip(comp_pred[0], gt_location[0]) if pr == gt]  # only check if continent and country are correct
         # correct_region_level 
 
-        R = 6371.0  # Earth's radius in km
+        r_earth = 6371.0  # Earth's radius in km
         lat1, lng1, lat2, lng2 = map(radians, pred[1] + gt[1])
-        distance = self.great_circle_distance(lat1, lng1, lat2, lng2, R)  # (km)
+        distance = self.great_circle_distance(lat1, lng1, lat2, lng2, r_earth)  # (km)
 
         return correct_region_level, distance
 

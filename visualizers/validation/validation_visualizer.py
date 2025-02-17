@@ -24,7 +24,7 @@ class ValidationVisualizer:
         if len(correct_dists) and len(incorrect_dists):
             plt.hist([correct_dists, incorrect_dists], rwidth=1 if not plot_spaced else None, bins=bins, color=["green", "red"], label=["Correct Region", "Incorrect Region"], alpha=0.7)
         elif len(correct_dists):
-            # TODO: Is this flawed? Does using plot_density mislead because it is density of correct dists being there, not all dists?
+            # Is this flawed? Does using plot_density mislead because it is density of correct dists being there, not all dists?
             plt.hist(correct_dists, bins=bins, color="green", label="Correct Region", alpha=0.7)  # Could determine alpha based on confidence
         elif len(incorrect_dists):
             plt.hist(incorrect_dists, bins=bins, color="red", label="Incorrect Region", alpha=0.7)
@@ -61,7 +61,7 @@ class ValidationVisualizer:
         n_categories = 5
         correct_rates = np.arange(n_categories)[:, None] <= correct_region_levels  # [[res >= i for res in correct_region_levels] for i in range(n_categories)]
         correct_averages = np.sum(correct_rates, axis=-1) / len(correct_region_levels)
-        category_labels = {
+        category_labels = {  # cumulative, a bit unintuitive but more informative
             0: f"Nothing Correct ({correct_averages[0] * 100:.2f}%)",
             1: f"Correct continent ({correct_averages[1] * 100:.2f}%)",
             2: f"Correct continent and country ({correct_averages[2] * 100:.2f}%)",

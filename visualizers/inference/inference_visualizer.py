@@ -64,28 +64,31 @@ class InferenceVisualizer:
 
         text = ""
         conf_order = np.argsort(confs)[::-1][:5]
-        for region, conf in zip(prompt_components[conf_order, 0], confs[conf_order]):
+        regions = [prompt_components[idx][0] for idx in conf_order]
+        for region, conf in zip(regions, confs[conf_order]):
             text += f"{self.get_prompt_description(region)}: {conf * 100:.2f}%\n"
 
-        props = dict(boxstyle="round", facecolor="white", alpha=0.5)
-        ax.text(0.05, 0.95, text[:-1], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)
+        props = dict(boxstyle="round,pad=0.5", facecolor="white", edgecolor=(0.8, 0.8, 0.8), alpha=0.5)
+        ax.text(0.015, 1.2, text[:-1], transform=ax.transAxes, fontsize=15, verticalalignment="top", bbox=props)  # estimated to imitate legend
 
         # ax.scatter(float(best_prompt[2]), float(best_prompt[1]), c="green", alpha=1)
         ax.set_title("Results", fontsize=20)
-        ax.axis("off")
-        ax.legend(loc="upper right", fontsize=15, fancybox=True, framealpha=0.5)  # would like to pass props to here to unify
+        # ax.axis("off")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.legend(loc="lower right", fontsize=15, bbox_to_anchor=(1, 1), framealpha=0.5)  # would like to pass props to here to unify
 
     def visualize_inferences(self):
         for inference_name, inference_information in self.inference_informations.items():
-            fig, axs = plt.subplots(1, 2, figsize=(21, 9), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
+            fig, axs = plt.subplots(1, 2, figsize=(21, 11), width_ratios=[1, 2])  # figsize would be (21, 7) but a little extra for title space and spacing
 
-            prompt_components = np.array(inference_information["prompts"])
+            prompt_components = inference_information["prompts"]
             image = np.array(inference_information["image"])
             confs = np.array(inference_information["confs"])
             best_prompt = inference_information["best_prompt"]
             correct_prompt = inference_information.get("correct_prompt", None)
 
-            lat_lngs = np.array(prompt_components[:, 1], dtype=np.float32)
+            lat_lngs = np.array([components[1] for components in prompt_components])
 
             self.plot_image(axs[0], image)
             self.plot_scatter(axs[1], lat_lngs, confs, prompt_components, best_prompt, correct_prompt)

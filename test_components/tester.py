@@ -6,7 +6,7 @@ from shared_components.files import load_json
 
 class Tester:
     def __init__(self, processor_method="Geo"):
-        self.inferencer = Inferencer(test_cfg.image_size, test_cfg.refinement_steps, "", test_cfg.shapefile_path, processor_method=processor_method)
+        self.inferencer = Inferencer(test_cfg.image_size, test_cfg.refinement_steps, "", gadm_path=test_cfg.gadm_path, city_path=test_cfg.city_path, processor_method=processor_method)
 
         if not os.path.exists(test_cfg.inference_save_path):
             os.mkdir(test_cfg.inference_save_path)

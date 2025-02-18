@@ -1,6 +1,7 @@
 import os
 from tf_keras.optimizers import Adam, SGD
 from tf_keras.optimizers.schedules import ExponentialDecay
+from tf_keras import mixed_precision
 
 import train_components.train_config as train_cfg
 from model.constrastive_loss import ContrastiveLoss
@@ -14,6 +15,9 @@ class Trainer:
 
         self.train_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, 1 - train_cfg.validation_split, train_batch_size, processor_method=processor_method)
         self.val_dataset_handler = DatasetHandler(train_cfg.dataset_path, train_cfg.image_size, -train_cfg.validation_split, val_batch_size, processor_method=processor_method)
+
+        if train_cfg.use_mixed_precision:
+            mixed_precision.set_global_policy("mixed_float16")
 
         # self.log_path = os.path.join(train.SAVE_PATH, "training_log.json")
 

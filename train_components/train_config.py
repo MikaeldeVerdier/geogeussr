@@ -6,6 +6,7 @@ used_regions = None  # ["Sweden"] to only train on Sweden
 # Training config
 dataset_path = "data/datasets/dataset10"
 use_augmentation = False
+use_mixed_precision = False
 iteration_amount = 180_000
 batch_size = 2
 validation_split = 0

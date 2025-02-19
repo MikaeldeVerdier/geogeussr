@@ -30,18 +30,19 @@ class ValidationVisualizer:
             plt.hist(incorrect_dists, bins=bins, color="red", label="Incorrect Region", alpha=0.7)
         """
 
-    def plot_histo(self, bins, dists, categories, plot_density, category_labels={}):
+    def plot_histo(self, bins, dists, categories, plot_density, category_labels={}, colors={}):
         bin_width = np.diff(bins)
         divisor = len(dists) * bin_width if plot_density else 1
 
         n_categories_to_plot = np.max(categories) + 1
         category_hists = [np.histogram(dists[categories == i], bins=bins)[0] / divisor for i in range(n_categories_to_plot)]
-        for i, category_hist in enumerate(category_hists):
+        for i, (category_hist, color) in enumerate(zip(category_hists, colors)):
             other_category_hists = category_hists[:i]
             tot_other_category_hist = np.sum(other_category_hists, axis=0)
 
             category_label = category_labels.get(i, f"Category {i}")
-            plt.bar(bins[:-1], category_hist, width=bin_width, bottom=tot_other_category_hist, label=category_label, alpha=0.7)
+            color = colors.get(i, "Black")
+            plt.bar(bins[:-1], category_hist, width=bin_width, bottom=tot_other_category_hist, label=category_label, color=color, alpha=0.7)
 
         # if len(correct_hist):
         #     plt.bar(bins[:-1], correct_hist_density, width=bin_width, bottom=incorrect_hist_density if len(incorrect_hist_density) else None, label="Correct Region", color="green", alpha=0.7)
@@ -68,8 +69,15 @@ class ValidationVisualizer:
             3: f"Correct continent, country and province ({correct_averages[3] * 100:.2f}%)",
             4: f"Correct continent, country, province and city ({correct_averages[4] * 100:.2f}%)"
         }
+        colors = {
+            0: "red",
+            1: "orange",
+            2: "green",
+            3: "blue",
+            4: "purple"
+        }
 
-        self.plot_histo(bins, dists, correct_region_levels, plot_density, category_labels=category_labels)
+        self.plot_histo(bins, dists, correct_region_levels, plot_density, category_labels=category_labels, colors=colors)
 
         avg_dist = np.mean(dists)
         avg_correct_region_level = np.mean(correct_region_levels)

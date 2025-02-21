@@ -1,7 +1,7 @@
 import os
-from tf_keras.optimizers import Adam, SGD
-from tf_keras.optimizers.schedules import ExponentialDecay
-from tf_keras import mixed_precision
+from keras.optimizers import Adam, SGD
+from keras.optimizers.schedules import ExponentialDecay
+from keras import mixed_precision
 
 import train_components.train_config as train_cfg
 from model.constrastive_loss import ContrastiveLoss
@@ -36,8 +36,8 @@ class Trainer:
         return model_checkpoint_callback
 
     def train(self, model, load=False):
-        optimizer = self.build_optimizer(**train_cfg.optimizer_config)
-        model.compile(optimizer=optimizer, loss=ContrastiveLoss())
+        # optimizer = self.build_optimizer(**train_cfg.optimizer_config)
+        # model.compile(optimizer=optimizer, loss=ContrastiveLoss())
 
         save_interval = int(train_cfg.iteration_amount * train_cfg.save_ratio)
         callback = self.create_checkpoint_callback(load, save_interval, train_cfg.name)

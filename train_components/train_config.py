@@ -4,13 +4,13 @@ image_size = (336, 336, 3)
 used_regions = None  # ["Sweden"] to only train on Sweden
 
 # Training config
-dataset_path = "data/datasets/dataset10"
+dataset_path = "/kaggle/input/google-street-view-images/dataset_100k"
 use_augmentation = False
 use_mixed_precision = False
-iteration_amount = 180_000
-batch_size = 2
+iteration_amount = 200_000
+batch_size = 256
 validation_split = 0
-save_ratio = 0.05
+save_ratio = 0.005
 save_dir = "save_folder"
 
 # Optimizer config

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tf_keras import layers, Model
+from keras import layers, Model
 
 from model.geo_clip.submodels.components.transformer_block import TransformerBlock
 

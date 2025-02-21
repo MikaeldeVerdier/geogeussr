@@ -1,5 +1,5 @@
-from tf_keras import layers, Model
-from tf_keras.applications import ResNet50
+from keras import layers, Model
+from keras.applications import ResNet50
 
 class ModifiedResnet(Model):
     def __init__(self, embed_dim, **kwargs):

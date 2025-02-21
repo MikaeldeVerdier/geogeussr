@@ -6,8 +6,8 @@ from transformers import CLIPProcessor
 from model.preprocessor import Preprocessor
 
 class StreetPreprocessorOriginal(Preprocessor):
-    def __init__(self, dataset_path, regions, image_size=(336, 336, 3), **kwargs):
-        super().__init__(regions, **kwargs)
+    def __init__(self, dataset_path, image_size=(336, 336, 3), **kwargs):
+        super().__init__(**kwargs)
 
         self.dataset_path = dataset_path
         self.image_size = image_size
@@ -75,7 +75,7 @@ class StreetPreprocessorOriginal(Preprocessor):
         return x_batch, np.array(y_batch), ret_data
 
     def process(self, image_input, text_input):
-        processed = self.clip_processor(text=text_input, images=image_input, return_tensors="np", padding=True)
+        processed = self.clip_processor(text=list(text_input), images=image_input, return_tensors="np", padding=True)
         processed_data = processed.data
 
         return processed_data
@@ -89,13 +89,16 @@ class StreetPreprocessorOriginal(Preprocessor):
 
         return img
 
-    def generate_description(self, location):
-        return f"A Street View photo from {location['coding']['country']}."
+    # def generate_description(self, location):
+    #     return f"A Street View photo from {location['coding']['country']}."
 
     def get_location(self, location):  # could do this in init to avoid repeating (not that expensive though)
         description = self.generate_description(location)
 
         return description
+
+    def encode_texts(self, texts):
+        return np.array(texts)
 
     """
     def decode_texts(self, encoded_texts):

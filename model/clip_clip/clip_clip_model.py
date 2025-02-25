@@ -43,7 +43,24 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
     def clip_compile(self, *args, **kwargs):
         self.clip_model.compile(*args, **kwargs)
 
-    def cosine_sim_with_scale(self, x, y):
+    @tf.function
+    def graph_call_model(self, x_batch, training, ret_key):
+        return self(x_batch, training=training, ret_key=ret_key)
+
+    @tf.function
+    def graph_compute_loss(self, y_true, y_pred):
+        return self.compute_loss(y=y_true, y_pred=y_pred)
+
+    @tf.function
+    def graph_compute_gradients(self, tape, loss):
+        return tape.gradient(loss, self.trainable_variables)
+
+    @tf.function
+    def graph_apply_gradients(self, gradients):
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables), jit_compile=True)
+
+    @tf.function
+    def graph_cosine_sim_with_scale(self, x, y):
         mul = tf.matmul(x, y, transpose_b=True)
         scale = tf.exp(self.clip_model.clip.logit_scale)
 
@@ -63,12 +80,15 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
             # Training
             accumulated_embeds = [[], []]
             with tf.GradientTape() as tape:
+                loss = 0
                 for step, (x_batch, y_batch) in enumerate(train_data):
                     callbacks.on_train_batch_begin(step)
 
-                    predictions = self(x_batch, training=True, ret_key=None)
+                    predictions = self.graph_call_model(x_batch, True, None)
                     accumulated_embeds[0].append(predictions["image_embeds"])
                     accumulated_embeds[1].append(predictions["text_embeds"])
+
+                    del predictions
 
                     callbacks.on_train_batch_end(step, logs={"loss": -1})
 
@@ -77,13 +97,23 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
                         image_embeds = tf.concat(accumulated_embeds[0], axis=0)
                         text_embeds = tf.concat(accumulated_embeds[1], axis=0)
 
-                        sim = self.cosine_sim_with_scale(image_embeds, text_embeds)
-                        loss = self.compute_loss(y=tf.zeros_like(sim), y_pred=sim)
+                        del accumulated_embeds
+
+                        sim = self.graph_cosine_sim_with_scale(image_embeds, text_embeds)
+
+                        del image_embeds
+                        del text_embeds
+
+                        loss = self.graph_compute_loss(tf.zeros_like(sim), sim)
+
+                        del sim
 
                         break
 
-            gradients = tape.gradient(loss, self.trainable_variables)
-            self.optimizer.apply_gradients(zip(gradients, self.trainable_variables), jit_compile=True)
+            gradients = self.graph_compute_gradients(tape, loss)
+            self.graph_apply_gradients(gradients)
+
+            del gradients
 
             logs = {"loss": loss.numpy()}
 

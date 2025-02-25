@@ -6,13 +6,16 @@ from transformers import CLIPProcessor
 from model.preprocessor import Preprocessor
 
 class ClipPreprocessor(Preprocessor):
-    def __init__(self, dataset_path, image_size=(336, 336, 3), **kwargs):
+    def __init__(self, dataset_path, image_size, **kwargs):
         super().__init__(**kwargs)
 
         self.dataset_path = dataset_path
         self.image_size = image_size
 
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14-336")
+        # self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
+        # self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch16")
+        # self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
         transposed_image_size = (image_size[2], image_size[0], image_size[1])
         self.output_shapes = {  # doing a lot here just to not import tensorflow even though i've improted transformers. should just define tensorSpec here...

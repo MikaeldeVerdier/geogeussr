@@ -1,7 +1,7 @@
 import tensorflow as tf
-from keras.models import Model, load_model
+from tf_keras.models import Model, load_model
 from model.constrastive_loss import ContrastiveLoss
-# from keras import Variable
+# from tf_keras import Variable
 
 import model.geo_clip.submodels.configs.shared_config as shr_cfg
 import model.geo_clip.submodels.configs.vit_config as vit_cfg

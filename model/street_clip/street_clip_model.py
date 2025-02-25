@@ -1,4 +1,4 @@
-from keras.models import Model, load_model
+from tf_keras.models import Model, load_model
 from transformers import TFCLIPModel
 from model.constrastive_loss import ContrastiveLoss
 

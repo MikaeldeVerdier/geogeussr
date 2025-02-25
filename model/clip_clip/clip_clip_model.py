@@ -1,16 +1,4 @@
-import tensorflow as tf
-print(f"All devices: {tf.config.list_logical_devices('TPU')}")
-
-tpu = tf.distribute.cluster_resolver.TPUClusterResolver(tpu="local")
-tf.tpu.experimental.initialize_tpu_system(tpu)
-tpu_strategy = tf.distribute.TPUStrategy(tpu)
-
-print("TPU strategy loaded.")
-
-from keras.optimizers import Adam, SGD
-from keras.optimizers.schedules import ExponentialDecay
-
-from keras.models import Model, load_model
+from tf_keras.models import Model, load_model
 from transformers import TFCLIPModel
 from model.constrastive_loss import ContrastiveLoss
 
@@ -18,20 +6,10 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
     def __init__(self, load_path=None, **kwargs):
         super(ClipCLIP, self).__init__(**kwargs)
 
-        with tpu_strategy.scope():
-            if load_path is not None:
-                self.clip_model = load_model(load_path, custom_objects={"ContrastiveLoss": ContrastiveLoss})
-            else:
-                self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
-                opt = self.build_optimizer(1e-4, 1000, 0.95, 0.9, 0.95, 0.1)  # :)
-                self.compile(optimizer=opt, loss=ContrastiveLoss(), steps_per_execution=32)
-
-    def build_optimizer(self, initial_lr, decay_steps, decay_factor, beta_1, beta_2, weight_decay, **kwargs):
-        schedule = ExponentialDecay(initial_lr, decay_steps, decay_factor, staircase=True)
-        # optimizer = Adam(learning_rate=schedule, beta_1=beta_1, beta_2=beta_2, weight_decay=weight_decay)
-        optimizer = SGD(learning_rate=schedule, momentum=beta_1, weight_decay=weight_decay)
-
-        return optimizer
+        if load_path is not None:
+            self.clip_model = load_model(load_path, custom_objects={"ContrastiveLoss": ContrastiveLoss})
+        else:
+            self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
 
     @classmethod
     def from_save(cls, load_path, **kwargs):

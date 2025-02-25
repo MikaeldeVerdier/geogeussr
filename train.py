@@ -1,5 +1,5 @@
 # from model.geo_clip.geo_clip_model import GeoCLIP
-# from model.street_clip.street_clip_model import StreetCLIP
+from model.street_clip.street_clip_model import StreetCLIP
 from model.clip_clip.clip_clip_model import ClipCLIP
 from train_components.trainer import Trainer
 

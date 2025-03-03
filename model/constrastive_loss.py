@@ -1,22 +1,27 @@
-import tensorflow as tf
-from tf_keras.losses import Loss, sparse_categorical_crossentropy
+import torch
+import torch.nn.functional as F
 
-class ContrastiveLoss(Loss):
-    def __init__(self, **kwargs):
-        super(ContrastiveLoss, self).__init__(**kwargs)
+class ContrastiveLoss:
+    def __init__(self, logit_scale):
+        self.logit_scale = logit_scale
 
-    def call(self, y_true, y_pred):  # could consider a custom training loop since y_true isn't used
-        # logits_per_image, logits_per_text = y_pred
+    def cosine_sim_with_scale(self, x, y):
+        sim = torch.matmul(x, y.T)
+        scale = torch.exp(self.logit_scale)
 
-        logits_per_image = y_pred  # why does only logits_per_image get passed?
-        logits_per_text = tf.transpose(logits_per_image)
+        return sim * scale
 
-        batch_size = tf.shape(logits_per_image)[0]
-        labels = tf.range(batch_size)
+    def __call__(self, image_embeds, text_embeds, batch_size):
+        image_embeds = F.normalize(image_embeds, p=2, dim=-1)
+        text_embeds = F.normalize(text_embeds, p=2, dim=-1)
+        logits_per_image = self.cosine_sim_with_scale(image_embeds, text_embeds)
+        logits_per_text = logits_per_image.T
 
-        loss_image_to_text = tf.reduce_mean(sparse_categorical_crossentropy(labels, logits_per_image, from_logits=True))
-        loss_text_to_image = tf.reduce_mean(sparse_categorical_crossentropy(labels, logits_per_text, from_logits=True))
+        # batch_size = text_inputs.shape[0]
+        labels = torch.arange(batch_size)
+        loss_i = F.cross_entropy(logits_per_image, labels)
+        loss_t = F.cross_entropy(logits_per_text, labels)
 
-        total_loss = (loss_image_to_text + loss_text_to_image) / 2
+        loss = (loss_i + loss_t) / 2
 
-        return total_loss
+        return loss

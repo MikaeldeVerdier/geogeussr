@@ -1,10 +1,9 @@
 import os
-import json
-from tf_keras.callbacks import Callback
+from train_components.callbacks.callback import Callback
 
 from shared_components.files import save_json, load_json
 
-class ModelCheckpointWithHistory(Callback):
+class ModelCheckpointWithHistoryCallback(Callback):
     def __init__(self, load_initial, history_filepath, model_filepath, save_interval, **kwargs):
         super().__init__(**kwargs)
 
@@ -53,8 +52,12 @@ class ModelCheckpointWithHistory(Callback):
         self.history = self.append_to_history(self.history, logs)
         self.num_unsaved_epochs += 1
 
+        print(f"Epoch {epoch} finished with logs: {logs}")
+
         if self.num_unsaved_epochs >= self.save_interval:  # could just use (epoch + 1) % self.save_iterval since epoch is correct now
             self.save_metrics()
-            self.model.save(self.model_filepath.format(epoch=self.get_epoch()), save_format="tf")
+            self.model.save(self.model_filepath.format(epoch=epoch), save_format="tf")
 
             self.num_unsaved_epochs = 0
+
+            print(f"Saved model and history at epoch {epoch}")

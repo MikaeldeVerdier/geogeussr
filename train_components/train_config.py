@@ -19,7 +19,6 @@ optimizer_config = {
     "initial_lr": 1e-4,
     "decay_steps": 1000,
     "decay_factor": 0.95,
-    "beta_1": 0.9,
-    "beta_2": 0.98,
+    "momentum": 0.3,
     "weight_decay": 0.1
 }

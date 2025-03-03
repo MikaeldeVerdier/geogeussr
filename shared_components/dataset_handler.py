@@ -1,9 +1,8 @@
 import numpy as np
 import random
-import tensorflow as tf
-from tensorflow.data import Dataset
 
 from data.data_handler import DataHandler
+from shared_components.torch_dataset import TorchDataset
 from train_components.data_augmentor import DataAugmentor
 # from model.geo_clip.geo_preprocessor import GeoPreprocessor
 from model.street_clip.street_preprocessor import StreetPreprocessor
@@ -39,74 +38,14 @@ class DatasetHandler:
 
         self.data_handler = None
 
-    def get_region_annotations(self, region_names):
-        if region_names is None:
-            return self.annotations
-
-        region_annotations = [
-            annotation
-            for annotation in self.annotations
-            if annotation["location"]["coding"]["country"] in region_names
-        ]
-
-        return region_annotations
-
-    def create_generator(self, region_names, shuffle=True, use_augmentation=False, rets=[], processor_kwargs={}):
-        i = 0
-
-        while True:
-            region_annotations = self.get_region_annotations(region_names)
-            if shuffle:
-                chosen_annotations = random.sample(region_annotations, min(self.batch_size, len(region_annotations)))
-            else:
-                chosen_annotations = [region_annotations[j % len(region_annotations)] for j in range(i, i + self.batch_size)]
-
-            i += 1
-
-            yield self.preprocessor(chosen_annotations, use_augmentation=use_augmentation, rets=rets, **processor_kwargs)
-
-    def create_tensor_spec(self, shape, dtype):
-        dtype_map = {
-            int: tf.int32,
-            float: tf.float32,
-            bool: tf.bool,
-            str: tf.string,
-            bytes: tf.string
-        }
-
-        return tf.TensorSpec(shape=(None,) + shape, dtype=dtype_map[dtype])
-
-    def get_output_signature(self, output_shapes):
-        if isinstance(output_shapes, list):
-            return [self.create_tensor_spec(v, d) for v, d in output_shapes]
-        elif isinstance(output_shapes, tuple):
-            return tuple(self.get_output_signature(list(output_shapes)))
-        elif isinstance(output_shapes, dict):
-            return {k: self.create_tensor_spec(v, d) for k, (v, d) in output_shapes.items()} 
-
     def create_dataset(self, region_names, shuffle=False, use_augmentation=False, rets=[], processor_kwargs={}):
-        region_annotations = self.get_region_annotations(region_names)  # unecessarily calculated independently twice
-        used_batch_size = min(self.batch_size, len(region_annotations))
-        if used_batch_size == 0:
+        if self.batch_size == 0:
             return None
-        
-        # return self.create_generator(image_size, preprocess_function, region_name, y_index)
 
-        generator = lambda: self.create_generator(region_names, shuffle=shuffle, use_augmentation=use_augmentation, rets=rets, processor_kwargs=processor_kwargs)  # why does this need to be lambda-wrapped (wrapped at all)?
-        output_signature = self.get_output_signature(self.preprocessor.output_shapes)
-        dataset = Dataset.from_generator(
-            generator,
-            output_signature=(
-                # (
-                #     tf.TensorSpec(shape=(used_batch_size,) + image_shape, dtype=tf.float32),
-                #     tf.TensorSpec(shape=(used_batch_size, max_tokens), dtype=tf.int32)
-                # ),
-                output_signature,
-                tf.TensorSpec(shape=(used_batch_size,), dtype=tf.string)  # y_true - doesn't matter (needs to have batch_size as first dimension though, (in some versions))
-            )
-        )
+        dataset = TorchDataset(self.annotations, self.preprocessor, region_names=region_names, data_augmentor=self.data_augmentor, use_augmentation=use_augmentation, rets=rets, processor_kwargs=processor_kwargs)
+        loader = dataset.get_loader(self.batch_size, shuffle=shuffle)
 
-        return dataset
+        return loader
 
     def softmax(self, distribution):
         exp_distribution = np.exp(distribution - np.max(distribution))

@@ -1,6 +1,6 @@
 from tf_keras.models import Model, load_model
 from transformers import TFCLIPModel
-from model.constrastive_loss import ContrastiveLoss
+from model.contrastive_loss import ContrastiveLoss
 
 class StreetCLIP(Model):  # this class is kinda useless, just uses clip_model basically
     def __init__(self, load_path=None, **kwargs):

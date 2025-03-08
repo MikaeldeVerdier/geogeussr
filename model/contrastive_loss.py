@@ -12,7 +12,7 @@ class ContrastiveLoss(Loss):
         logits_per_text = tf.transpose(logits_per_image)
 
         batch_size = tf.shape(logits_per_image)[0]
-        labels = tf.range(batch_size)
+        labels = tf.range(batch_size)  # TODO: How about not using this? how about instead of one-hot encoding use similarity scores equal to the distance to the ground truth (as a way to improve center-of-mass) approach?
 
         loss_image_to_text = tf.reduce_mean(sparse_categorical_crossentropy(labels, logits_per_image, from_logits=True))
         loss_text_to_image = tf.reduce_mean(sparse_categorical_crossentropy(labels, logits_per_text, from_logits=True))

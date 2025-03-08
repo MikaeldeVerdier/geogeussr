@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tf_keras.models import Model, load_model
 from transformers import TFCLIPModel
-from model.constrastive_loss import ContrastiveLoss
+from model.contrastive_loss import ContrastiveLoss
 
 class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP references, but with a different model and processor
     def __init__(self, load_path=None, **kwargs):

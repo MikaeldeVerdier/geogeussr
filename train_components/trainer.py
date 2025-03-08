@@ -4,7 +4,7 @@ from tf_keras.optimizers.schedules import ExponentialDecay
 from tf_keras import mixed_precision
 
 import train_components.train_config as train_cfg
-from model.constrastive_loss import ContrastiveLoss
+from model.contrastive_loss import ContrastiveLoss
 from shared_components.dataset_handler import DatasetHandler
 from train_components.callbacks import ModelCheckpointWithHistory
 

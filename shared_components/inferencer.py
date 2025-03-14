@@ -25,10 +25,10 @@ class Inferencer:
 
             if not use_com:
                 best_prompt, best_prompt_components, conf = self.dataset_handler.decode_predictions_standard(logits_per_image, used_prompts, used_prompt_components)
-                print(f"Model guessed (standard): {best_prompt}, confidence: {conf})")
+                print(f"Model guessed (standard): {best_prompt} (confidence: {conf})")
             else:
                 best_prompt, best_prompt_components = self.dataset_handler.decode_predictions_com(logits_per_image, used_prompts, used_prompt_components)
-                print(f"Model guessed (CoM): {best_prompt}")  # center-of-mass
+                print(f"Model guessed (hedging): {best_prompt}")  # center-of-mass
 
             confs = self.dataset_handler.softmax(logits_per_image)  # done again in decode_predictions_standard but whatever
             refinement_results.append({

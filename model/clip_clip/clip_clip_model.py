@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tf_keras.models import Model, load_model
+from keras.models import Model, load_model
 from transformers import TFCLIPModel
 from model.contrastive_loss import ContrastiveLoss
 
@@ -11,10 +11,14 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
             self.clip_model = load_model(load_path, custom_objects={"ContrastiveLoss": ContrastiveLoss})
         else:
             # Descending order of size
-            self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
+            # self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14-336")
             # self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-large-patch14")
             # self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch16")  # DOESN'T EXIST AS TFCLIPModel
-            # self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+            self.clip_model = TFCLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+
+        # a = load_model(load_path, custom_objects={"ContrastiveLoss": ContrastiveLoss})
+        # weights = a.get_weights()
+        # self.clip_model.set_weights(weights)
 
     @classmethod
     def from_save(cls, load_path, **kwargs):

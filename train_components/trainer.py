@@ -1,7 +1,7 @@
 import os
 from tf_keras.optimizers import Adam, SGD
 from tf_keras.optimizers.schedules import ExponentialDecay
-from tf_keras import mixed_precision
+from keras import mixed_precision
 
 import train_components.train_config as train_cfg
 from model.contrastive_loss import ContrastiveLoss

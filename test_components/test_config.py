@@ -1,5 +1,5 @@
 # Model config
-image_size = (336, 336, 3)
+image_size = (224, 224, 3)
 
 # Testing config
 regions_path = "data/geo_data.json"

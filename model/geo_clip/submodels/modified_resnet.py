@@ -1,4 +1,4 @@
-from tf_keras import layers, Model
+from keras import layers, Model
 from tf_keras.applications import ResNet50
 
 class ModifiedResnet(Model):

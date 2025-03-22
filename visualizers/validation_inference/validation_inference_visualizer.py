@@ -62,19 +62,20 @@ class ValidationInferenceVisualizer:
         if min(self.refinement_levels) == 2:
             self.flattened_info.insert(0, self.flattened_info[0])  # needs to be inserted because no explicit prompt was done for continent, but can just use which country was chosen
 
+        self.groups = []
         self.confidence_matrix = []
         for i in range(max(self.refinement_levels)):
-            groups = {}
+            self.groups.append({})
             for i2, corr_prompt in enumerate(correct_prompts):
                 correct_region = corr_prompt[0][i]
-                groups.setdefault(correct_region, []).append(i2)
+                self.groups[-1].setdefault(correct_region, []).append(i2)
 
             grouped_info = {
                 k: [
                     self.flattened_info[i][j]
                     for j in v 
                     if not self.strict_grouping or k in [a[0][i]for a in self.flattened_info[i][j]["prompt_components"]]
-                ] for k, v in groups.items()
+                ] for k, v in self.groups[-1].items()
             }
 
             used_confidences = {}
@@ -154,7 +155,7 @@ class ValidationInferenceVisualizer:
             confidence_list.append([])
             for label2 in all_labels:
                 if label2 not in confidence_dict[label]:
-                    confidence_list[-1].append(np.NaN)  # never happens, but just in case
+                    confidence_list[-1].append(np.NaN)  # only happens if not strict
                 else:
                     confidence_list[-1].append(confidence_dict[label][label2])
 
@@ -171,7 +172,7 @@ class ValidationInferenceVisualizer:
 
         return zip(*confidence_matrices_and_labels)
 
-    def plot_matrix(self, matrix, labels, file_name=""):
+    def plot_matrix(self, matrix, labels, matrix_name, file_name=""):
         fig_size = int(len(labels) * 0.28 + 8)  # regressed function
         fig, ax = plt.subplots(figsize=(fig_size, fig_size))
 
@@ -198,7 +199,7 @@ class ValidationInferenceVisualizer:
         ax.set_yticks(np.arange(-0.5, len(labels) - 0.5, 1), minor=True)
         ax.grid(which="minor", color="white", linestyle="-", linewidth=0.5)
 
-        plt.title("Prediction Confidence Matrix")
+        plt.title(f"Prediction Confidence Matrix for {matrix_name}")
 
         validation_inference_path = os.path.join(self.save_path, file_name)
         plt.savefig(validation_inference_path, bbox_inches="tight", pad_inches=0.5)
@@ -207,23 +208,41 @@ class ValidationInferenceVisualizer:
 
     def visualize_matrix(self):
         for i in range(max(self.refinement_levels)):
+            if i == 0:
+                matrix_label = "Continents"
+            elif i == 1:
+                matrix_label = "Countries"
+
             if self.strict_grouping:
                 confidence_matrices, all_labels = self.strict_construct_matrices(self.confidence_matrix[i])
-                for i2, (confidence_matrix, all_label) in enumerate(zip(confidence_matrices, all_labels)):
+                for confidence_matrix, all_label in zip(confidence_matrices, all_labels):
                     if not len(confidence_matrix):
                         continue
 
-                    file_name = f"validation_inference_matrix_r{i}_s{i2}.png"
-                    self.plot_matrix(confidence_matrix, all_label, file_name=file_name)
+                    if i >= 2:
+                        group_labels = [sorted(a.keys()) for a in self.confidence_matrix[i].values()]
+                        group_indices = [index for index, labels in enumerate(group_labels) if labels == all_label]
+
+                        matrix_label = [group_name for group_name, group_idx in self.groups[i - 1].items() if group_idx == group_indices][0]  # list(self.groups[i - 1].keys())[list(self.groups[i - 1].values()).index(idx)]
+
+                    file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
+                    self.plot_matrix(confidence_matrix, all_label, matrix_label, file_name=file_name)
 
                 continue
 
+            if i == 2:
+                matrix_label = "Provinces"
+            elif i == 3:
+                matrix_label = "Cities"
+            elif i > 3:
+                matrix_label = "Unknown"  # should never happen
+
             confidence_matrix, all_labels = self.construct_matrix(self.confidence_matrix[i])
-            file_name = f"validation_inference_matrix_r{i}.png"
-            self.plot_matrix(confidence_matrix, all_labels, file_name=file_name)
+            file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
+            self.plot_matrix(confidence_matrix, all_labels, matrix_label, file_name=file_name)
 
 
 if __name__ == "__main__":
     visualizer = ValidationInferenceVisualizer()
-    visualizer.visualize_pie()
+    # visualizer.visualize_pie()
     visualizer.visualize_matrix()

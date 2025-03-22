@@ -7,8 +7,9 @@ import matplotlib.colors as mcolors
 import validation_inference_viz_config as viz_cfg
 
 class ValidationInferenceVisualizer:
-    def __init__(self, save_path=viz_cfg.save_path, inference_dir=viz_cfg.inference_dir):
+    def __init__(self, save_path=viz_cfg.save_path, inference_dir=viz_cfg.inference_dir, strict_grouping=viz_cfg.strict_grouping):
         self.save_path = save_path
+        self.strict_grouping = strict_grouping
 
         if not os.path.exists(save_path):
             os.mkdir(save_path)
@@ -59,7 +60,13 @@ class ValidationInferenceVisualizer:
                 correct_region = corr_prompt[0][i]
                 groups.setdefault(correct_region, []).append(i2)
 
-            grouped_info = {k: [self.flattened_info[i][j] for j in v] for k, v in groups.items()}
+            grouped_info = {
+                k: [
+                    self.flattened_info[i][j]
+                    for j in v 
+                    if not self.strict_grouping or k in [a[0][i]for a in self.flattened_info[i][j]["prompt_components"]]
+                ] for k, v in groups.items()
+            }
 
             used_confidences = {}
             for info_group, group_info in grouped_info.items():
@@ -82,7 +89,7 @@ class ValidationInferenceVisualizer:
         for used_confidence in confidence_matrix.values():
             all_labels.extend(list(used_confidence.keys()))
 
-        return set(all_labels)
+        return sorted(set(all_labels))
 
     def visualize_pie(self):
         for i in range(max(self.refinement_levels)):
@@ -90,6 +97,9 @@ class ValidationInferenceVisualizer:
             colors_dict = self.gc(all_labels)
 
             for info_group, used_confidence in self.confidence_matrix[i].items():
+                if not len(used_confidence):
+                    continue
+
                 confidence_threshold = 0.05
                 sorted_confidences_dict = sorted(used_confidence.items(), key=lambda x: x[1], reverse=True)
 
@@ -119,7 +129,12 @@ class ValidationInferenceVisualizer:
                 plt.savefig(validation_inference_path)
                 plt.close()
 
-    def construct_matrix(self, all_labels, confidence_dict):
+    def construct_matrix(self, confidence_dict):
+        all_labels = self.get_all_labels(confidence_dict)
+
+        if not len(all_labels):
+            return [], []
+
         confidence_list = []
         for label in all_labels:
             if label not in confidence_dict:
@@ -134,50 +149,69 @@ class ValidationInferenceVisualizer:
                 else:
                     confidence_list[-1].append(confidence_dict[label][label2])
 
-        return np.array(confidence_list)
+        return np.array(confidence_list), all_labels
+    
+    def strict_construct_matrices(self, confidence_dict):
+        groups = {}
+        for i, (label, values) in enumerate(confidence_dict.items()):
+            key = "".join(list(values.keys()))
+            groups.setdefault(key, []).append(label)
+
+        grouped_confidence_dicts = [{i: confidence_dict[i] for i in group} for group in groups.values()]
+        confidence_matrices_and_labels = [self.construct_matrix(conf_dict) for conf_dict in grouped_confidence_dicts]
+
+        return zip(*confidence_matrices_and_labels)
+
+    def plot_matrix(self, matrix, labels, file_name=""):
+        fig_size = int(len(labels) * 0.28 + 8)  # regressed function
+        fig, ax = plt.subplots(figsize=(fig_size, fig_size))
+
+        ax.plot([-0.5, len(labels) - 0.5], [-0.5, len(labels) - 0.5], color="red", lw=2, ls="--")
+        # ax.grid(which="major", color="black", linestyle="-", linewidth=0.5)
+
+        cax = ax.matshow(matrix)
+
+        plt.colorbar(cax, shrink=0.8)
+
+        ax.xaxis.tick_top()
+        ax.yaxis.set_label_position("right")
+
+        ax.set_xlabel("Predicted", labelpad=8)
+        ax.set_ylabel("Truth", labelpad=16, rotation=270)  # for some reason needs to be padded more
+
+        ax.set_xticks(np.arange(len(labels)), labels=labels, rotation=45, ha="left")
+        ax.set_yticks(np.arange(len(labels)), labels=labels)
+
+        ax.set_xticks(np.arange(-0.5, len(labels) - 0.5, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, len(labels) - 0.5, 1), minor=True)
+        ax.grid(which="minor", color="white", linestyle="-", linewidth=0.5)
+
+        plt.title("Prediction Confidence Matrix")
+
+        validation_inference_path = os.path.join(self.save_path, file_name)
+        plt.savefig(validation_inference_path, bbox_inches="tight", pad_inches=0.5)
+        plt.close()
+        # ax.clear()
 
     def visualize_matrix(self):
         for i in range(max(self.refinement_levels)):
-            all_labels = sorted(self.get_all_labels(self.confidence_matrix[i]))
-            confidence_matrix = self.construct_matrix(all_labels, self.confidence_matrix[i])
+            if self.strict_grouping:
+                confidence_matrices, all_labels = self.strict_construct_matrices(self.confidence_matrix[i])
+                for i2, (confidence_matrix, all_label) in enumerate(zip(confidence_matrices, all_labels)):
+                    if not len(confidence_matrix):
+                        continue
 
-            fig_size = int(len(all_labels) * 0.28 + 8)
-            fig, ax = plt.subplots(figsize=(fig_size, fig_size))
+                    file_name = f"validation_inference_matrix_r{i}_s{i2}.png"
+                    self.plot_matrix(confidence_matrix, all_label, file_name=file_name)
 
-            ax.plot([-0.5, len(all_labels) - 0.5], [-0.5, len(all_labels) - 0.5], color="red", lw=2, ls="--")
-            # ax.grid(which="major", color="black", linestyle="-", linewidth=0.5)
+                continue
 
-            cax = ax.matshow(confidence_matrix)
-
-            plt.colorbar(cax, shrink=0.8)
-
-            ax.xaxis.tick_top()
-            ax.yaxis.set_label_position("right")
-
-            ax.set_xlabel("Predicted", labelpad=8)
-            ax.set_ylabel("Correct", labelpad=18, rotation=270)  # for some reason needs to be padded more
-
-            ax.set_xticks(np.arange(len(all_labels)), labels=all_labels, rotation=45, ha="left")
-            ax.set_yticks(np.arange(len(all_labels)), labels=all_labels)
-
-            # ax.grid(which="minor")
-
-            # ax.set_xticklabels(all_labels, rotation=45, ha="left")
-            # ax.set_yticklabels(all_labels)
-
-            ax.set_xticks(np.arange(-0.5, len(all_labels) - 0.5, 1), minor=True)
-            ax.set_yticks(np.arange(-0.5, len(all_labels) - 0.5, 1), minor=True)
-            ax.grid(which="minor", color="white", linestyle="-", linewidth=0.5)
-
-            plt.title("Prediction Confidence Matrix")
-
-            validation_inference_path = os.path.join(self.save_path, f"validation_inference_matrix_r{i}.png")
-            plt.savefig(validation_inference_path, bbox_inches="tight", pad_inches=0.5)
-            plt.close()
-            # ax.clear()
+            confidence_matrix, all_labels = self.construct_matrix(self.confidence_matrix[i])
+            file_name = f"validation_inference_matrix_r{i}.png"
+            self.plot_matrix(confidence_matrix, all_labels, file_name=file_name)
 
 
 if __name__ == "__main__":
     visualizer = ValidationInferenceVisualizer()
-    # visualizer.visualize_pie()
+    visualizer.visualize_pie()
     visualizer.visualize_matrix()

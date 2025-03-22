@@ -1,6 +1,6 @@
 import os
 import json
-from tf_keras.callbacks import Callback
+from keras.callbacks import Callback
 
 from shared_components.files import save_json, load_json
 

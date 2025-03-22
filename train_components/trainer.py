@@ -1,6 +1,6 @@
 import os
-from tf_keras.optimizers import Adam, SGD
-from tf_keras.optimizers.schedules import ExponentialDecay
+from keras.optimizers import Adam, SGD
+from keras.optimizers.schedules import ExponentialDecay
 from keras import mixed_precision
 
 import train_components.train_config as train_cfg

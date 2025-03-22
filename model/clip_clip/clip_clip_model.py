@@ -1,5 +1,6 @@
 import tensorflow as tf
 from keras.models import Model, load_model
+from keras.callbacks import CallbackList
 from transformers import TFCLIPModel
 from model.contrastive_loss import ContrastiveLoss
 
@@ -61,7 +62,7 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
 
     @tf.function
     def graph_apply_gradients(self, gradients):
-        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables), jit_compile=True)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
     @tf.function
     def graph_cosine_sim_with_scale(self, x, y):
@@ -72,7 +73,7 @@ class ClipCLIP(Model):  # ClipCLIP references is the exact same as StreetCLIP re
 
     # A custom fit method that accumulates embeddings before computing loss to effectively increase batch size without increasing memory usage (at the cost of speed)
     def custom_fit(self, train_data, initial_epoch, final_epoch, callbacks, effective_batch_size):
-        callbacks = tf.keras.callbacks.CallbackList(callbacks, add_history=True, add_progbar=True, model=self, epochs=final_epoch, initial_epoch=initial_epoch, verbose=1)
+        callbacks = CallbackList(callbacks, add_history=True, add_progbar=True, model=self, epochs=final_epoch, initial_epoch=initial_epoch, verbose=1, steps=1)
         callbacks._progbar.stateful_metrics = ["loss"]  # work-around instead of just adding progbar to callbacklist
 
         train_data = train_data.prefetch(tf.data.AUTOTUNE)

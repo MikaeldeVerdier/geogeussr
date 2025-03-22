@@ -1,6 +1,6 @@
 # Model config
 name = "GeoCLIP"
-image_size = (336, 336, 3)
+image_size = (224, 224, 3)
 used_regions = None  # ["Sweden"] to only train on Sweden
 
 # Training config

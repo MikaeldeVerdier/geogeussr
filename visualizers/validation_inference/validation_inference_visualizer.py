@@ -2,7 +2,6 @@ import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 
 import validation_inference_viz_config as viz_cfg
 
@@ -23,32 +22,42 @@ class ValidationInferenceVisualizer:
             image_name = inference_file.replace(".json", "")
 
             inference_path = os.path.join(inference_dir, inference_file)
-            with open(inference_path, "r") as json_file:
+            with open(inference_path, encoding="utf8") as json_file:  # could have a files.py file for this
                 inference_informations[image_name] = json.load(json_file)
 
         return inference_informations
 
     def gc(self, all_labels):
-        colormap = plt.get_cmap("tab20")
+        tab20 = plt.get_cmap("tab20")
 
         color_indices = np.linspace(0, 1, len(all_labels))
         np.random.shuffle(color_indices)
         colors_dict = {
-            label: mcolors.to_hex(colormap(color_indices[i]))
+            label: tab20(color_indices[i])
             for i, label in enumerate(all_labels)
         }
 
         return colors_dict
 
     def prepare_inferences(self, inference_information):
-        correct_prompts = [information["correct_prompt"] for information in inference_information.values()]
-        half_flattened_info = [information["refinement_results"] for information in inference_information.values()]
+        # correct_prompts = [information["correct_prompt"] for information in inference_information.values()]
+        # half_flattened_info = [information["refinement_results"] for information in inference_information.values()]
+
+        correct_prompts, half_flattened_info = zip(*[(information["correct_prompt"], information["refinement_results"]) for information in inference_information.values()])
 
         max_refinement = [[len(ref["used_prompt_components"][0]) for ref in refinement] for refinement in half_flattened_info]
         max_refinement_steps = max([len(m) for m in max_refinement])        
-        self.refinement_levels = [max([m[i] for m in max_refinement]) for i in range(max_refinement_steps)]  # np.max(max_refinement, axis=0)
+        self.refinement_levels = [
+            max(
+                [m[i] for m in max_refinement if i < len(m)]
+            )
+            for i in range(max_refinement_steps)
+        ]  # np.max(max_refinement, axis=0)
 
-        self.flattened_info = [[half_information[i] for half_information in half_flattened_info] for i in range(max_refinement_steps)]
+        self.flattened_info = [
+            [half_information[i] for half_information in half_flattened_info if i < len(half_information)]
+            for i in range(max_refinement_steps)
+        ]
 
         if min(self.refinement_levels) == 2:
             self.flattened_info.insert(0, self.flattened_info[0])  # needs to be inserted because no explicit prompt was done for continent, but can just use which country was chosen
@@ -138,14 +147,14 @@ class ValidationInferenceVisualizer:
         confidence_list = []
         for label in all_labels:
             if label not in confidence_dict:
-                confidence_list.append([0 for _ in all_labels])
+                confidence_list.append([np.NaN for _ in all_labels])
 
                 continue
 
             confidence_list.append([])
             for label2 in all_labels:
                 if label2 not in confidence_dict[label]:
-                    confidence_list[-1].append(0)
+                    confidence_list[-1].append(np.NaN)  # never happens, but just in case
                 else:
                     confidence_list[-1].append(confidence_dict[label][label2])
 
@@ -169,7 +178,10 @@ class ValidationInferenceVisualizer:
         ax.plot([-0.5, len(labels) - 0.5], [-0.5, len(labels) - 0.5], color="red", lw=2, ls="--")
         # ax.grid(which="major", color="black", linestyle="-", linewidth=0.5)
 
-        cax = ax.matshow(matrix)
+        cmap = plt.get_cmap("viridis")
+        cmap.set_bad(color="black")
+
+        cax = ax.matshow(matrix, cmap=cmap, vmin=0, vmax=1)
 
         plt.colorbar(cax, shrink=0.8)
 

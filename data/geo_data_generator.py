@@ -37,7 +37,7 @@ class GeoDataGenerator:
         for _, row in joined_gdf.iterrows():
             continent = row["CONTINENT"]
             country = row["country"]
-            province = row["NAME_1"]
+            province = row["NAME_1"]  # TODO: For some reason, some have provinces that are empty strings. These should probably be ignored, look into it.
             city = row["city"]
 
             continent_origin = (continent_centroids[continent].x, continent_centroids[continent].y) if continent in continent_centroids.index else None

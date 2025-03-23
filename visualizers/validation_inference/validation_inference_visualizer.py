@@ -73,8 +73,9 @@ class ValidationInferenceVisualizer:
             grouped_info = {
                 k: [
                     self.flattened_info[i][j]
-                    for j in v 
-                    if not self.strict_grouping or k in [a[0][i]for a in self.flattened_info[i][j]["prompt_components"]]
+                    for j in v
+                    if not self.strict_grouping or
+                    (j < len(self.flattened_info[i]) and k in [a[0][i]for a in self.flattened_info[i][j]["prompt_components"]])
                 ] for k, v in self.groups[-1].items()
             }
 
@@ -221,9 +222,13 @@ class ValidationInferenceVisualizer:
 
                     if i >= 2:
                         group_labels = [sorted(a.keys()) for a in self.confidence_matrix[i].values()]
-                        group_indices = [index for index, labels in enumerate(group_labels) if labels == all_label]
+                        label_index = group_labels.index(all_label)  # don't like this, relies on dict order or something weird
 
-                        matrix_label = [group_name for group_name, group_idx in self.groups[i - 1].items() if group_idx == group_indices][0]  # list(self.groups[i - 1].keys())[list(self.groups[i - 1].values()).index(idx)]
+                        pos_matrix_labels = [group_name for group_name, group_indices in self.groups[i - 1].items() if label_index in group_indices][0]  # list(self.groups[i - 1].keys())[list(self.groups[i - 1].values()).index(idx)]
+                        if len(pos_matrix_labels):
+                            matrix_label = pos_matrix_labels
+                        else:
+                            matrix_label = "Unknown"
 
                     file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
                     self.plot_matrix(confidence_matrix, all_label, matrix_label, file_name=file_name)

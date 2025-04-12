@@ -100,11 +100,10 @@ class ValidationInferenceVisualizer:
 
     def get_colors(self, all_labels):  # improve this to avoid using same (very similar) color for labels that are next to each other in pie diagram
         base_colors = plt.get_cmap("tab20").colors
-        smooth_tab20 = LinearSegmentedColormap.from_list("smooth_tab20", base_colors, N=256)
+        smooth_tab20 = LinearSegmentedColormap.from_list("smooth_tab20", base_colors, N=len(all_labels) + 1)  # 256)
         # tab20 = plt.get_cmap("tab20")
 
-        color_indices = np.linspace(0, 1, len(all_labels))
-        np.random.shuffle(color_indices)
+        color_indices = np.linspace(0, 1, len(all_labels))  # could just zip smooth_tab20 colors with all_labels...
         colors_dict = {
             label: smooth_tab20(color_indices[i])
             for i, label in enumerate(all_labels)
@@ -115,7 +114,10 @@ class ValidationInferenceVisualizer:
     def visualize_pie(self):
         for i in range(max(self.refinement_levels)):
             all_labels = self.get_all_labels(self.confidence_matrix[i])  # set([comps[0][i] for flat_info in self.flattened_info[i] for comps in flat_info["prompt_components"]])
-            colors_dict = self.get_colors(all_labels)
+            if all([sorted(list(val.keys())) == all_labels for val in self.confidence_matrix[i].values()]):  # doesn't need to check all, could just check the first
+                pre_compute_colors_dict = self.get_colors(all_labels)  # could precompute everything with a dict that has labels as keys
+            else:
+                pre_compute_colors_dict = None
 
             for info_group, used_confidence in self.confidence_matrix[i].items():
                 if not len(used_confidence):
@@ -135,10 +137,16 @@ class ValidationInferenceVisualizer:
                 # default_colors = [color for color in default_colors if color not in colors.values()]
                 # used_colors = [colors.get(label, default_colors[i2 % len(default_colors)]) for i2, label in enumerate(filtered_labels)]
 
+                if pre_compute_colors_dict is None:
+                    all_labels = sorted(list(used_confidence.keys()))  # to ensure same colors for same labels
+                    colors_dict = self.get_colors(all_labels)
+                else:
+                    colors_dict = pre_compute_colors_dict
+
                 colors = [colors_dict[label] for label in sorted_keys]
                 pct_format = lambda x: f"{x:.1f}%" if x > confidence_threshold * 100 else ""
                 wedges, texts, autotexts = plt.pie(sorted_values, labels=filtered_labels, autopct=pct_format, colors=colors, explode=explode)  # , colors=used_colors)
-                
+
                 for i2, text in enumerate(texts):
                     if filtered_labels[i2] == info_group:  # text.get_text() == info_group:
                         text.set_fontweight("bold")

@@ -52,6 +52,7 @@ class ValidationInferenceVisualizer:
             self.flattened_info.insert(0, self.flattened_info[0])  # needs to be inserted because no explicit prompt was done for continent, but can just use which country was chosen
 
         self.groups = []
+        self.group_ns = {}
         self.confidence_matrix = []
         for i in range(max(self.refinement_levels)):
             self.groups.append({})
@@ -81,6 +82,8 @@ class ValidationInferenceVisualizer:
 
                 sum_confs = sum(used_confidences[info_group].values())  # len(group_info)
                 used_confidences[info_group] = {k: v / sum_confs for k, v in used_confidences[info_group].items()}
+
+                self.group_ns[info_group] = len(group_info)
 
             self.confidence_matrix.append(used_confidences)
 
@@ -136,7 +139,7 @@ class ValidationInferenceVisualizer:
                     if filtered_labels[i2] == info_group:  # text.get_text() == info_group:
                         text.set_fontweight("bold")
 
-                plt.title(f"Prediction Confidence Distribution for {info_group}")
+                plt.title(f"Prediction Confidence Distribution for {info_group}\n({self.group_ns[info_group]} {'samples' if self.group_ns[info_group] != 1 else 'sample'})")
                 plt.tight_layout()
 
                 validation_inference_path = os.path.join(self.save_path, f"validation_inference_pie_{info_group}.png")
@@ -196,8 +199,9 @@ class ValidationInferenceVisualizer:
         ax.set_xlabel("Predicted", labelpad=8)
         ax.set_ylabel("Truth", labelpad=16, rotation=270)  # for some reason needs to be padded more
 
+        y_ticks = [f"{label} ({self.group_ns.get(label, 0)} {'samples' if self.group_ns.get(label, 0) != 1 else 'sample'})" for label in labels]  # include group_ns in labels
         ax.set_xticks(np.arange(len(labels)), labels=labels, rotation=45, ha="left")
-        ax.set_yticks(np.arange(len(labels)), labels=labels)
+        ax.set_yticks(np.arange(len(y_ticks)), labels=y_ticks)
 
         ax.set_xticks(np.arange(-0.5, len(labels) - 0.5, 1), minor=True)
         ax.set_yticks(np.arange(-0.5, len(labels) - 0.5, 1), minor=True)
@@ -256,5 +260,5 @@ class ValidationInferenceVisualizer:
 
 if __name__ == "__main__":
     visualizer = ValidationInferenceVisualizer()
-    # visualizer.visualize_pie()
+    visualizer.visualize_pie()
     visualizer.visualize_matrix()

@@ -27,18 +27,6 @@ class ValidationInferenceVisualizer:
 
         return inference_informations
 
-    def gc(self, all_labels):
-        tab20 = plt.get_cmap("tab20")
-
-        color_indices = np.linspace(0, 1, len(all_labels))
-        np.random.shuffle(color_indices)
-        colors_dict = {
-            label: tab20(color_indices[i])
-            for i, label in enumerate(all_labels)
-        }
-
-        return colors_dict
-
     def prepare_inferences(self, inference_information):
         # correct_prompts = [information["correct_prompt"] for information in inference_information.values()]
         # half_flattened_info = [information["refinement_results"] for information in inference_information.values()]
@@ -90,7 +78,7 @@ class ValidationInferenceVisualizer:
 
                         used_confidences[info_group][prompt_component[0][i]] += confidence
 
-                sum_confs = sum(used_confidences[info_group].values())
+                sum_confs = sum(used_confidences[info_group].values())  # len(group_info)
                 used_confidences[info_group] = {k: v / sum_confs for k, v in used_confidences[info_group].items()}
 
             self.confidence_matrix.append(used_confidences)
@@ -102,10 +90,22 @@ class ValidationInferenceVisualizer:
 
         return sorted(set(all_labels))
 
+    def get_colors(self, all_labels):  # improve this to avoid using same (very similar) color for labels that are next to each other in pie diagram
+        tab20 = plt.get_cmap("tab20")
+
+        color_indices = np.linspace(0, 1, len(all_labels))
+        np.random.shuffle(color_indices)
+        colors_dict = {
+            label: tab20(color_indices[i])
+            for i, label in enumerate(all_labels)
+        }
+
+        return colors_dict
+
     def visualize_pie(self):
         for i in range(max(self.refinement_levels)):
             all_labels = self.get_all_labels(self.confidence_matrix[i])  # set([comps[0][i] for flat_info in self.flattened_info[i] for comps in flat_info["prompt_components"]])
-            colors_dict = self.gc(all_labels)
+            colors_dict = self.get_colors(all_labels)
 
             for info_group, used_confidence in self.confidence_matrix[i].items():
                 if not len(used_confidence):
@@ -221,14 +221,18 @@ class ValidationInferenceVisualizer:
                         continue
 
                     if i >= 2:
-                        group_labels = [sorted(a.keys()) for a in self.confidence_matrix[i].values()]
-                        label_index = group_labels.index(all_label)  # don't like this, relies on dict order or something weird
+                        group_labels = [
+                            sorted(comp[0][i] for comp in infos["prompt_components"])
+                            for infos in self.flattened_info[i]
+                        ]  # [sorted(a.keys()) for a in self.confidence_matrix[i].values()]
+                        label_indices = [
+                            index
+                            for index, value in enumerate(group_labels)
+                            if all([val in all_label for val in value])
+                        ]
 
-                        pos_matrix_labels = [group_name for group_name, group_indices in self.groups[i - 1].items() if label_index in group_indices][0]  # list(self.groups[i - 1].keys())[list(self.groups[i - 1].values()).index(idx)]
-                        if len(pos_matrix_labels):
-                            matrix_label = pos_matrix_labels
-                        else:
-                            matrix_label = "Unknown"
+                        region_prompt = self.flattened_info[i][label_indices[0]]  # any element in label_indices should work
+                        matrix_label = region_prompt["prompt_components"][0][0][i - 1]
 
                     file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
                     self.plot_matrix(confidence_matrix, all_label, matrix_label, file_name=file_name)

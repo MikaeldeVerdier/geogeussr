@@ -7,7 +7,11 @@
 *.csv
 datasets/
 
-save_folder*/
+save_folder/*
+!save_folder/results\ 145123/
+save_folder/results\ 145123/*.json
+save_folder/results\ 145123/*/*.json
+save_folder/results\ 145123/*/*/*.json
 
 visualizers/*/*_data/
 

@@ -2,7 +2,7 @@ import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap
 
 import validation_inference_viz_config as viz_cfg
 
@@ -11,8 +11,7 @@ class ValidationInferenceVisualizer:
         self.save_path = save_path
         self.strict_grouping = strict_grouping
 
-        if not os.path.exists(save_path):
-            os.mkdir(save_path)
+        self.create_dir(save_path)
 
         inference_information = self.load_inferences(inference_dir)
         self.prepare_inferences(inference_information)
@@ -88,6 +87,10 @@ class ValidationInferenceVisualizer:
 
             self.confidence_matrix.append(used_confidences)
 
+    def create_dir(self, dir_path):
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
     def get_all_labels(self, confidence_matrix):
         all_labels = []
         for used_confidence in confidence_matrix.values():
@@ -143,7 +146,11 @@ class ValidationInferenceVisualizer:
                 plt.title(f"Prediction Confidence Distribution for {info_group}\n({self.group_ns[i][info_group]} {'samples' if self.group_ns[i][info_group] != 1 else 'sample'})")
                 plt.tight_layout()
 
-                validation_inference_path = os.path.join(self.save_path, f"validation_inference_pie_{info_group}.png")
+                self.create_dir(os.path.join(self.save_path, "pie"))
+                dir_path = os.path.join(self.save_path, "pie", f"r{i}")
+                self.create_dir(dir_path)
+
+                validation_inference_path = os.path.join(dir_path, f"pie_{info_group}.png")
                 plt.savefig(validation_inference_path)
                 plt.close()
 
@@ -180,7 +187,7 @@ class ValidationInferenceVisualizer:
 
         return zip(*confidence_matrices_and_labels)
 
-    def plot_matrix(self, matrix, labels, matrix_name, group_n_samples, file_name=""):
+    def plot_matrix(self, matrix, labels, matrix_name, group_n_samples, i=0, file_name=""):
         fig_size = int(len(labels) * 0.28 + 8)  # regressed function
         fig, ax = plt.subplots(figsize=(fig_size, fig_size))
 
@@ -210,7 +217,11 @@ class ValidationInferenceVisualizer:
 
         plt.title(f"Prediction Confidence Matrix for {matrix_name}")
 
-        validation_inference_path = os.path.join(self.save_path, file_name)
+        self.create_dir(os.path.join(self.save_path, "matrix"))
+        dir_path = os.path.join(self.save_path, "matrix", f"r{i}")
+        self.create_dir(dir_path)
+
+        validation_inference_path = os.path.join(dir_path, file_name)  # weird to use join when file_name just uses / in its string
         plt.savefig(validation_inference_path, bbox_inches="tight", pad_inches=0.5)
         plt.close()
         # ax.clear()
@@ -242,8 +253,8 @@ class ValidationInferenceVisualizer:
                         region_prompt = self.flattened_info[i][label_indices[0]]  # any element in label_indices should work
                         matrix_label = region_prompt["prompt_components"][0][0][i - 1]
 
-                    file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
-                    self.plot_matrix(confidence_matrix, all_label, matrix_label, self.group_ns[i], file_name=file_name)
+                    file_name = f"matrix_{matrix_label}.png"
+                    self.plot_matrix(confidence_matrix, all_label, matrix_label, self.group_ns[i], i=i, file_name=file_name)
 
                 continue
 
@@ -255,8 +266,8 @@ class ValidationInferenceVisualizer:
                 matrix_label = "Unknown"  # should never happen
 
             confidence_matrix, all_labels = self.construct_matrix(self.confidence_matrix[i])
-            file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
-            self.plot_matrix(confidence_matrix, all_labels, matrix_label, self.group_ns[i], file_name=file_name)
+            file_name = f"matrix_{matrix_label}.png"
+            self.plot_matrix(confidence_matrix, all_labels, matrix_label, self.group_ns[i], i=i, file_name=file_name)
 
 
 if __name__ == "__main__":

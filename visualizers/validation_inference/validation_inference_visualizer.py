@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 import validation_inference_viz_config as viz_cfg
 
@@ -91,12 +92,14 @@ class ValidationInferenceVisualizer:
         return sorted(set(all_labels))
 
     def get_colors(self, all_labels):  # improve this to avoid using same (very similar) color for labels that are next to each other in pie diagram
-        tab20 = plt.get_cmap("tab20")
+        base_colors = plt.get_cmap("tab20").colors
+        smooth_tab20 = LinearSegmentedColormap.from_list("smooth_tab20", base_colors, N=256)
+        # tab20 = plt.get_cmap("tab20")
 
         color_indices = np.linspace(0, 1, len(all_labels))
         np.random.shuffle(color_indices)
         colors_dict = {
-            label: tab20(color_indices[i])
+            label: smooth_tab20(color_indices[i])
             for i, label in enumerate(all_labels)
         }
 

@@ -52,7 +52,7 @@ class ValidationInferenceVisualizer:
             self.flattened_info.insert(0, self.flattened_info[0])  # needs to be inserted because no explicit prompt was done for continent, but can just use which country was chosen
 
         self.groups = []
-        self.group_ns = {}
+        self.group_ns = []
         self.confidence_matrix = []
         for i in range(max(self.refinement_levels)):
             self.groups.append({})
@@ -69,6 +69,7 @@ class ValidationInferenceVisualizer:
                 ] for k, v in self.groups[-1].items()
             }
 
+            self.group_ns.append({})
             used_confidences = {}
             for info_group, group_info in grouped_info.items():
                 used_confidences[info_group] = {}
@@ -83,7 +84,7 @@ class ValidationInferenceVisualizer:
                 sum_confs = sum(used_confidences[info_group].values())  # len(group_info)
                 used_confidences[info_group] = {k: v / sum_confs for k, v in used_confidences[info_group].items()}
 
-                self.group_ns[info_group] = len(group_info)
+                self.group_ns[-1][info_group] = len(group_info)
 
             self.confidence_matrix.append(used_confidences)
 
@@ -139,7 +140,7 @@ class ValidationInferenceVisualizer:
                     if filtered_labels[i2] == info_group:  # text.get_text() == info_group:
                         text.set_fontweight("bold")
 
-                plt.title(f"Prediction Confidence Distribution for {info_group}\n({self.group_ns[info_group]} {'samples' if self.group_ns[info_group] != 1 else 'sample'})")
+                plt.title(f"Prediction Confidence Distribution for {info_group}\n({self.group_ns[i][info_group]} {'samples' if self.group_ns[i][info_group] != 1 else 'sample'})")
                 plt.tight_layout()
 
                 validation_inference_path = os.path.join(self.save_path, f"validation_inference_pie_{info_group}.png")
@@ -179,7 +180,7 @@ class ValidationInferenceVisualizer:
 
         return zip(*confidence_matrices_and_labels)
 
-    def plot_matrix(self, matrix, labels, matrix_name, file_name=""):
+    def plot_matrix(self, matrix, labels, matrix_name, group_n_samples, file_name=""):
         fig_size = int(len(labels) * 0.28 + 8)  # regressed function
         fig, ax = plt.subplots(figsize=(fig_size, fig_size))
 
@@ -193,13 +194,13 @@ class ValidationInferenceVisualizer:
 
         plt.colorbar(cax, shrink=0.8)
 
-        ax.xaxis.tick_top()
+        ax.xaxis.tick_top() 
         ax.yaxis.set_label_position("right")
 
         ax.set_xlabel("Predicted", labelpad=8)
         ax.set_ylabel("Truth", labelpad=16, rotation=270)  # for some reason needs to be padded more
 
-        y_ticks = [f"{label} ({self.group_ns.get(label, 0)} {'samples' if self.group_ns.get(label, 0) != 1 else 'sample'})" for label in labels]  # include group_ns in labels
+        y_ticks = [f"{label} ({group_n_samples.get(label, 0)} {'samples' if group_n_samples.get(label, 0) != 1 else 'sample'})" for label in labels]  # include group_ns in labels
         ax.set_xticks(np.arange(len(labels)), labels=labels, rotation=45, ha="left")
         ax.set_yticks(np.arange(len(y_ticks)), labels=y_ticks)
 
@@ -242,7 +243,7 @@ class ValidationInferenceVisualizer:
                         matrix_label = region_prompt["prompt_components"][0][0][i - 1]
 
                     file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
-                    self.plot_matrix(confidence_matrix, all_label, matrix_label, file_name=file_name)
+                    self.plot_matrix(confidence_matrix, all_label, matrix_label, self.group_ns[i], file_name=file_name)
 
                 continue
 
@@ -255,7 +256,7 @@ class ValidationInferenceVisualizer:
 
             confidence_matrix, all_labels = self.construct_matrix(self.confidence_matrix[i])
             file_name = f"validation_inference_matrix_r{i}_{matrix_label}.png"
-            self.plot_matrix(confidence_matrix, all_labels, matrix_label, file_name=file_name)
+            self.plot_matrix(confidence_matrix, all_labels, matrix_label, self.group_ns[i], file_name=file_name)
 
 
 if __name__ == "__main__":

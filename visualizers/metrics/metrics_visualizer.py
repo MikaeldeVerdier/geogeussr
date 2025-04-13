@@ -1,4 +1,3 @@
-import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -64,8 +63,11 @@ class MetricsVisualizer:
                     poly = np.poly1d(fit)
                     plt.plot(used_indices[cut_off:], poly(x), label=f"Trendline: {metric_key}", zorder=3)
 
-        plt.title("Metrics during training")
+        plt.title("Metrics During Training")
         plt.legend()
+
+        plt.xlabel("Epochs")
+        plt.ylabel("Metric Value")
 
         # text_vals = [("seperate", seperate), ("scoped", scoped), ("trendline", trendline), (f"down_sampled to {down_sampled_to}", down_sampled_to != None)]
         # title = ", ".join([text for text, val in text_vals if val])

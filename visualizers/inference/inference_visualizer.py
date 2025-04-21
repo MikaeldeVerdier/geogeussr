@@ -23,7 +23,7 @@ class InferenceVisualizer:
             image_name = inference_file.replace(".json", "")
 
             inference_path = os.path.join(inference_dir, inference_file)
-            with open(inference_path, "r") as json_file:
+            with open(inference_path, encoding="utf8") as json_file:
                 self.inference_informations[image_name] = json.load(json_file)
 
     def load_gadm(self, shapefile_path):
@@ -112,7 +112,7 @@ class InferenceVisualizer:
             plt.suptitle("Inference Results for Image", fontsize=40)
             plt.tight_layout()
 
-            inference_path = os.path.join(self.save_path, f"{inference_name}.mp4")
+            inference_path = os.path.join(self.save_path, f"{inference_name}.gif")
             ani.save(inference_path, writer="ffmpeg")
 
 
